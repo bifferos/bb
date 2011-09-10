@@ -1,2 +1,16 @@
-Collection of all Bifferboard software, openwrt, openwrt packages
-and Qemu, in a single repository.
+
+What have you done to OpenWrt?
+
+- Removed all stuff relating to targets other than the Bifferboard
+- Remove all stuff not relating to 2.6.37.6 kernel
+- Removed all scripts that aren't directly needed for the build
+- Kept Bifferboard related configuration
+- Avoided the need to do make package/symlinks, in order to avoid the
+  packages getting out of step with the core distribution
+
+What have you done to Qemu?
+
+- Removed all non-x86 target stuff and basically any files not 
+  needed for support of Bifferboard emulation.
+
+

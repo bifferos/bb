@@ -4,21 +4,29 @@
 """
  Look where the symbolic links are pointing, and convert the 
  feeds from links into real copies of the target files.
+ 
+ This converts the following
+
+ openwrt/feeds/<openwrt_packages>
+ openwrt/package/feeds/packages/<some_links>
+ 
+ into:
+ 
+ openwrt/feeds/<openwrt_packages>
+ openwrt/package/feeds/packages/<openwrt_packages>
+ 
 
  Instructions:
  
  - checkout openwrt
  - make package/symlinks (will require make menuconfig)
- - Run this script from the root of bb.
+ - Run this script from the root of openwrt.
  - Copy the package/feeds/packages dir somewhere safe
  - Get openwrt again
  - copy the package directory back
- - Archvive the result.
+ - Archvive the result as a fully self-contained openwrt release
+   resplendent with accompanying packages.
  
- You will then get a tarball with just the feed information
- .svn dirs have to be removed but .gitignore should do that.
-
- Any errors and you have to start again.
 """
 
 import os, glob, shutil
