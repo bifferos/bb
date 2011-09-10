@@ -1,0 +1,22 @@
+---
+ ip/ipxfrm.c |    2 --
+ 1 file changed, 2 deletions(-)
+
+--- iproute2-2.6.35.orig/ip/ipxfrm.c
++++ iproute2-2.6.35/ip/ipxfrm.c
+@@ -467,7 +467,6 @@ void xfrm_selector_print(struct xfrm_sel
+ 	switch (sel->proto) {
+ 	case IPPROTO_TCP:
+ 	case IPPROTO_UDP:
+-	case IPPROTO_SCTP:
+ 	case IPPROTO_DCCP:
+ 	default: /* XXX */
+ 		if (sel->sport_mask)
+@@ -1172,7 +1171,6 @@ static int xfrm_selector_upspec_parse(st
+ 		switch (sel->proto) {
+ 		case IPPROTO_TCP:
+ 		case IPPROTO_UDP:
+-		case IPPROTO_SCTP:
+ 		case IPPROTO_DCCP:
+ 			break;
+ 		default:

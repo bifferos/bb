@@ -1,0 +1,25 @@
+--- a/drivers/net/r6040.c
++++ b/drivers/net/r6040.c
+@@ -1073,6 +1073,8 @@
+ 	u16 *adrp;
+ 	int i;
+ 
++        if (!card_idx) return 0;  // no 2nd nic for Bifferboard
++
+ 	pr_info("%s\n", version);
+ 
+ 	err = pci_enable_device(pdev);
+@@ -1202,6 +1204,13 @@
+ 		goto err_out_mdio_unregister;
+ 	}
+ 
++        /* Check the vendor ID on the PHY, if 0xffff assume none attached */
++        if (r6040_phy_read(ioaddr, lp->phy_addr, 2) == 0xffff) {
++                printk(KERN_ERR DRV_NAME ": Failed to detect an attached PHY\n");
++                err = -ENODEV;
++                goto err_out_mdio_unregister;
++	}
++
+ 	/* Register net device. After this dev->name assign */
+ 	err = register_netdev(dev);
+ 	if (err) {

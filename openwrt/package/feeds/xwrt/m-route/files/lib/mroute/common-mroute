@@ -1,0 +1,58 @@
+. /etc/functions.sh
+include /lib/network
+
+WAN_LIST=""
+LAN_LIST="loopback"
+VAR_FIX_LIST="NAME TYPE COUNT RT_TABLE WEIGHT LPS STATE"
+VAR_DYN_LIST="UP DEVICE IPADDR NETMASK NETWORK GATEWAY CPS LLS CLS"
+VAR_ALL_LIST="$VAR_FIX_LIST $VAR_DYN_LIST"
+
+log_debug() {
+	if [ $DEBUG -eq $1 -o $1 -lt 4 ]; then
+		logger -t mroute -p $1 -s $2
+	fi
+}
+
+get_val () {
+	eval echo "$"${1}
+}
+
+uci_get() {
+	uci -P /var/state get "$1" 2>/dev/null
+}
+
+change_state () {
+	uci_revert_state "$1" "$2" "$3" "$4"
+	uci_set_state "$1" "$2" "$3" "$4"
+}
+
+uci_set() {
+	uci -P /var/state set "$1" 2>/dev/null
+}
+
+set_rtTables () {
+#
+# reserved values
+#
+#	echo 255 local > /etc/iproute2/rt_tables
+#	echo 254 main >> /etc/iproute2/rt_tables
+#	echo 253 default >> /etc/iproute2/rt_tables
+#	echo 0 unspec >> /etc/iproute2/rt_tables
+	local n
+	local RT
+	
+	n=200
+	RT=${1}_rt
+	if [ -z "`cat /etc/iproute2/rt_tables | grep $RT`" ] ; then
+		while [ "`cat /etc/iproute2/rt_tables | grep "^$n"`" ]
+		do
+			n=`expr $n + 1`
+		done
+		echo "$n $RT" >> /etc/iproute2/rt_tables 
+		log_debug 5 "set_rt_Tables:$n $RT"
+		n=`expr $n + 1`
+	fi
+	eval ${1}_RT_TABLE=$RT
+	log_debug 5 "set_rt_Tables:${1}_RT_TABLE=$RT.....OK"
+}
+

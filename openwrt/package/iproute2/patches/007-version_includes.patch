@@ -1,0 +1,17 @@
+---
+ include/linux/netfilter_ipv4/ip_tables.h |    3 +++
+ 1 file changed, 3 insertions(+)
+
+--- iproute2-2.6.35.orig/include/linux/netfilter_ipv4/ip_tables.h
++++ iproute2-2.6.35/include/linux/netfilter_ipv4/ip_tables.h
+@@ -113,7 +113,10 @@ struct ipt_entry {
+ #define IPT_CONTINUE XT_CONTINUE
+ #define IPT_RETURN XT_RETURN
+ 
++#include <linux/version.h> 
++#if LINUX_VERSION_CODE >= KERNEL_VERSION(2,6,0)
+ #include <linux/netfilter/xt_tcpudp.h>
++#endif
+ #define ipt_udp xt_udp
+ #define ipt_tcp xt_tcp
+ 

@@ -1,0 +1,187 @@
+#!/bin/sh
+. /etc/functions.sh
+. /lib/mroute/common-mroute
+
+make_wan_list () {
+	local gateway
+	local device
+	local proto
+	config_get device $1 device
+	config_get gateway $1 gateway
+	config_get proto $1 proto
+	[ -z "$device" -o -z "$gateway" -o -z "$proto" ] && return
+#	local ipaddr
+#	local network
+#	local mark
+	local name
+#	config_get network $1 network
+#	config_get ipaddr $1 ipaddr
+#	config_get mark $1 mark
+	config_get name $1 name
+	local status
+	config_get status $1 status
+	append WAN_LIST $1
+	eval ${1}_DEVICE=$device
+	eval ${1}_GATEWAY=$gateway
+	eval ${1}_PROTO=$proto
+	eval ${1}_STATUS=$status
+#	eval ${1}_IPADDR=$ipaddr
+#	eval ${1}_NETWORK=$network
+#	eval ${1}_MARK=$mark
+	eval ${1}_NAME=$name
+}
+
+ping_check () {
+	cps=1
+	ip route replace default via $gateway dev $device table default > /dev/null 2>&1
+	sleep 1 
+	ping -W $TIMEOUT -I $device -c 1 $TESTIP > /dev/null  2>&1
+	cps=$?
+	ping -W $TIMEOUT -I $device -c 1 $gateway > /dev/null  2>&1
+	gwp=$?
+	local Tx_Rx=$(ifconfig $device | grep "RX bytes")
+	cTx=${Tx_Rx##*:}
+	cRx=${Tx_Rx##*RX bytes:}
+	cTx=${cTx%% *}
+	cRx=${cRx%% *}
+#	dRx=$(expr $cRx - $lRx)
+#	dTx=$(expr $cTx - $lTx)
+}
+
+ping_iface () {
+	local device=$(get_val ${ifc}_DEVICE)
+#	local ipaddr=$(get_val ${ifc}_IPADDR)
+#	local network=$(get_val ${ifc}_NETWORK)
+	local gateway=$(get_val ${ifc}_GATEWAY)
+#	local mark=$(get_val ${ifc}_MARK)
+	local name=$(get_val ${ifc}_NAME)
+	local proto=$(get_val ${ifc}_PROTO)
+	local status=$(get_val ${ifc}_STATUS)
+
+#	local up=$(get_val ${ifc}_UP)
+	local count=$(get_val ${ifc}_COUNT)
+	local gcount=$(get_val ${ifc}_GCOUNT)
+#	local state=$(get_val ${ifc}_STATE)
+	local lps=$(get_val ${ifc}_LPS)
+	local lgw=$(get_val ${ifc}_LGW)
+	local lRx=$(get_val ${ifc}_LRX)
+	local lTx=$(get_val ${ifc}_LTX)
+	local cps #=$(get_val ${ifc}_CPS)
+	local gwp #=0
+	local cTx
+	local cRx
+#	local dRx=0
+#	local dTx=0
+	
+	lps=${lps:-1}
+	lgw=${lgw:-1}
+	lRx=${lRx:-0}
+	lTx=${lTx:-0}
+	
+#	status=${status:-1}
+	count=${count:-0}
+	gcount=${gcount:-0}
+	ping_check
+
+	if [ $lps -ne $cps ]; then
+		count=1
+		if [ $cps -eq 0 ]; then
+			log_debug 5 "ping state to internet changed to Ok for $ifc ($name)"
+		else
+			log_debug 5 "ping state to internet changed to Timeout for $ifc ($name)"
+		fi
+	else
+		count=$(expr $count + 1)
+	fi
+	if [ $lgw -ne $gwp ]; then
+		gcount=1
+		if [ $gwp -eq 0 ]; then
+			log_debug 5 "ping state to gateway $gateway changed to Ok for $ifc ($name)"
+		else
+			log_debug 5 "ping state to gateway $gateway changed to Timeout for $ifc ($name)"
+		fi
+	else
+		gcount=$(expr $gcount + 1)
+	fi
+
+	eval ${ifc}_LGW=$gwp
+	eval ${ifc}_LPS=$cps
+#log_debug 5 "ping status:$status cRx:$cRx lRx:$lRx lps:$lps $count lgw:$lgw $gcount $ifc ($name)"
+	if [ "$cRx" = "$lRx" ]; then #### No RX trafic in interface
+		if [ $status -ne 0 ]; then
+			case "$proto" in 
+				static)
+					log_debug 4 "ping change status of $ifc ($name) to Down"
+					status=0
+					change_state mroute $ifc status 0
+					env -i ACTION="changeRoute" INTERFACE="$ifc" DEVICE="$device" PROTO="$proto" /sbin/hotplug-call iface
+				;;
+				*)
+					log_debug 4 "ping reset interface $ifc ($name)"
+					ifup $ifc
+				;;
+			esac
+		fi
+	else #### RX trafic in interface
+		if [ $status -ne 0 ]; then  #### Interface active to send trafic to internet
+			#### ping timeout to internet
+			[ $lps -eq 1 -a $count -eq $FAILUREREPEATCOUNT ] && {
+				status=0
+				change_state mroute $ifc status 0
+				log_debug 4 "ping change status of $ifc ($name) to Down"
+				env -i ACTION="changeRoute" INTERFACE="$ifc" DEVICE="$device" PROTO="$proto" /sbin/hotplug-call iface
+			}
+		else #### Interface not send trafic to internet
+			[ $lgw -eq 1 -a $gcount -eq $RESETIFACE -a "$proto" != "static" ] && {
+				log_debug 4 "ping reset $ifc ($name)"
+				ifup $ifc
+			}
+			[ $lps -eq 0 -a $count -eq $SUCCESSREPEATCOUNT ] && {
+				change_state mroute $ifc status 1
+				status=1
+				log_debug 5 "ping change status of $ifc ($name) to Up"
+				env -i ACTION="changeRoute" INTERFACE="$ifc" DEVICE="$device" PROTO="$proto" /sbin/hotplug-call iface
+			}
+		fi
+	fi
+	[ $count -eq 10000 ] && count=1
+	[ $gcount -eq 10000 ] && gcount=1
+	eval ${ifc}_STATUS=$status
+	eval ${ifc}_COUNT=$count
+	eval ${ifc}_GCOUNT=$gcount
+	eval ${ifc}_LRX=$cRx
+	eval ${ifc}_LTX=$cTx
+}
+
+gwping () {
+	local R
+	local PR
+	local Route_List
+	R=0
+	PR=0
+	while : ; do
+		for ifc in $WAN_LIST; do
+			ping_iface
+		done
+		sleep $SLEEPTIME
+	done
+}
+
+load_settings () {
+	uci_load mroute
+	OS="$CONFIG_settings_os"
+	DEBUG="$CONFIG_settings_debug"
+	SLEEPTIME="$CONFIG_settings_sleeptime"
+	TESTIP="$CONFIG_settings_testip"
+	TIMEOUT="$CONFIG_settings_timeout"
+	SUCCESSREPEATCOUNT="$CONFIG_settings_success"
+	FAILUREREPEATCOUNT="$CONFIG_settings_failure"
+	RESETIFACE="$CONFIG_settings_resetif"
+	RESETADD="$CONFIG_settings_resetadd"
+	RESETMAX="$CONFIG_settings_resetmax"
+}
+
+config_load mroute
+load_settings
+config_foreach make_wan_list wanif
+gwping

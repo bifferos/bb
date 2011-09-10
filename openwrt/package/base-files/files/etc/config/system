@@ -1,0 +1,6 @@
+config system
+	option hostname	OpenWrt
+	option timezone	UTC
+
+config rdate
+	option interface	wan

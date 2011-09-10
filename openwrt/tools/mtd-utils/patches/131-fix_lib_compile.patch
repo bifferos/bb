@@ -1,0 +1,11 @@
+--- a/lib/Makefile
++++ b/lib/Makefile
+@@ -7,7 +7,7 @@ SUBDIRS =
+ # CFLAGS += -Werror
+ CPPFLAGS += -I../include
+ LIBS = libmtd libcrc32
+-TARGETS = libmtd.a libcrc32.a
++override TARGETS = libmtd.a libcrc32.a
+ 
+ include ../common.mk
+ 

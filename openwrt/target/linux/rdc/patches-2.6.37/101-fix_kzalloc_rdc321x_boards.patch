@@ -1,0 +1,40 @@
+--- a/arch/x86/mach-rdc321x/boards/ar525w.c
++++ b/arch/x86/mach-rdc321x/boards/ar525w.c
+@@ -27,6 +27,7 @@
+ #include <linux/input.h>
+ #include <linux/vmalloc.h>
+ #include <linux/mtd/mtd.h>
++#include <linux/slab.h>
+ 
+ #include <asm/rdc_boards.h>
+ 
+--- a/arch/x86/mach-rdc321x/boards/bifferboard.c
++++ b/arch/x86/mach-rdc321x/boards/bifferboard.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/input.h>
++#include <linux/slab.h>
+ 
+ #include <asm/rdc_boards.h>
+ 
+--- a/arch/x86/mach-rdc321x/boards/r8610.c
++++ b/arch/x86/mach-rdc321x/boards/r8610.c
+@@ -23,6 +23,7 @@
+ #include <linux/init.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/input.h>
++#include <linux/slab.h>
+ 
+ #include <asm/rdc_boards.h>
+ 
+--- a/arch/x86/mach-rdc321x/boards/sitecom.c
++++ b/arch/x86/mach-rdc321x/boards/sitecom.c
+@@ -25,6 +25,7 @@
+ #include <linux/init.h>
+ #include <linux/mtd/physmap.h>
+ #include <linux/input.h>
++#include <linux/slab.h>
+ 
+ #include <asm/rdc_boards.h>
+ 
