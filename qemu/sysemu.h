@@ -10,6 +10,7 @@
 
 /* vl.c */
 extern const char *bios_name;
+extern const char *firmware_name;
 
 extern int vm_running;
 extern const char *qemu_name;

@@ -118,5 +118,8 @@
 #define PCI_DEVICE_ID_INTEL_82801I_EHCI1 0x293a
 #define PCI_DEVICE_ID_INTEL_82801I_EHCI2 0x293c
 
+#define PCI_VENDOR_ID_RDC                0x17f3
+#define PCI_DEVICE_ID_RDC_R6040          0x6040
+
 #define PCI_VENDOR_ID_XEN               0x5853
 #define PCI_DEVICE_ID_XEN_PLATFORM      0x0001

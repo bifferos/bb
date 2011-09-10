@@ -172,6 +172,7 @@ int main(int argc, char **argv)
 
 static const char *data_dir;
 const char *bios_name = NULL;
+const char *firmware_name = NULL;
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
 DisplayType display_type = DT_DEFAULT;
 int display_remote = 0;
@@ -2477,6 +2478,9 @@ int main(int argc, char **argv, char **envp)
                 break;
             case QEMU_OPTION_bios:
                 bios_name = optarg;
+                break;
+            case QEMU_OPTION_firmware:
+                firmware_name = optarg;
                 break;
             case QEMU_OPTION_singlestep:
                 singlestep = 1;

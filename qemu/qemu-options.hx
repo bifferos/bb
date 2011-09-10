@@ -2080,6 +2080,14 @@ STEXI
 Set the filename for the BIOS.
 ETEXI
 
+DEF("firmware", HAS_ARG, QEMU_OPTION_bios, \
+    "-firmware file      set the filename for the firmware\n", QEMU_ARCH_ALL)
+STEXI
+@item -firmware @var{file}
+@findex -firmware
+Set the filename for the firmware.
+ETEXI
+
 DEF("enable-kvm", 0, QEMU_OPTION_enable_kvm, \
     "-enable-kvm     enable KVM full virtualization support\n", QEMU_ARCH_ALL)
 STEXI
