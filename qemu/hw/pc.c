@@ -55,7 +55,7 @@
 #define DPRINTF(fmt, ...)
 #endif
 
-#define BIOS_FILENAME "bios.bin"
+#define BIOS_FILENAME "biffboot.bin"
 
 #define PC_MAX_BIOS_SIZE (4 * 1024 * 1024)
 

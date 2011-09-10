@@ -457,7 +457,7 @@ Haiku)
   audio_drv_list="oss"
   audio_possible_drivers="oss alsa sdl esd pa"
   linux="yes"
-  linux_user="yes"
+  linux_user="no"
   usb="linux"
   kvm="yes"
   vhost_net="yes"
@@ -844,25 +844,6 @@ default_target_list=""
 if [ "$softmmu" = "yes" ] ; then
     default_target_list="\
 i386-softmmu \
-x86_64-softmmu \
-arm-softmmu \
-cris-softmmu \
-lm32-softmmu \
-m68k-softmmu \
-microblaze-softmmu \
-microblazeel-softmmu \
-mips-softmmu \
-mipsel-softmmu \
-mips64-softmmu \
-mips64el-softmmu \
-ppc-softmmu \
-ppcemb-softmmu \
-ppc64-softmmu \
-sh4-softmmu \
-sh4eb-softmmu \
-sparc-softmmu \
-sparc64-softmmu \
-s390x-softmmu \
 "
 fi
 # the following are Linux specific

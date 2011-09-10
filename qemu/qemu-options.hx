@@ -2080,7 +2080,7 @@ STEXI
 Set the filename for the BIOS.
 ETEXI
 
-DEF("firmware", HAS_ARG, QEMU_OPTION_bios, \
+DEF("firmware", HAS_ARG, QEMU_OPTION_firmware, \
     "-firmware file      set the filename for the firmware\n", QEMU_ARCH_ALL)
 STEXI
 @item -firmware @var{file}
