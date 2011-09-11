@@ -179,7 +179,8 @@ static void pc_init1(ram_addr_t ram_size,
                  idebus[0], idebus[1], rtc_state);
 
     if (pci_enabled && usb_enabled) {
-        usb_uhci_piix3_init(pci_bus, piix3_devfn + 2);
+        //usb_uhci_piix3_init(pci_bus, piix3_devfn + 2);
+        usb_ohci_init_pci(pci_bus, piix3_devfn + 2);
     }
 
     if (pci_enabled && acpi_enabled) {

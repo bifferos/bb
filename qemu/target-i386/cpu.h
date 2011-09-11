@@ -119,7 +119,10 @@
 #define AC_MASK			0x00040000
 #define VIF_MASK                0x00080000
 #define VIP_MASK                0x00100000
-#define ID_MASK                 0x00200000
+//
+// Prevent EFLAGS ID toggle, so linux doesn't think we have CPU ID.
+//#define ID_MASK                 0x00200000
+#define ID_MASK                 0x00000000
 
 /* hidden flags - used internally by qemu to represent additional cpu
    states. Only the CPL, INHIBIT_IRQ, SMM and SVMI are not

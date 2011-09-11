@@ -455,6 +455,8 @@ static PCIDeviceInfo i440fx_info[] = {
         .config_write = i440fx_write_config,
         .vendor_id    = PCI_VENDOR_ID_INTEL,
         .device_id    = PCI_DEVICE_ID_INTEL_82441,
+//        .vendor_id    = PCI_VENDOR_ID_RDC,
+//        .device_id    = PCI_DEVICE_ID_RDC_R6020,
         .revision     = 0x02,
         .class_id     = PCI_CLASS_BRIDGE_HOST,
     },{
