@@ -210,6 +210,7 @@ startBoot(void)
 static void
 maininit(void)
 {
+
     // Running at new code address - do code relocation fixups
     malloc_fixupreloc();
 
@@ -235,12 +236,14 @@ maininit(void)
     // Initialize internal tables
     boot_setup();
 
+
     // Start hardware initialization (if optionrom threading)
     if (CONFIG_THREADS && CONFIG_THREAD_OPTIONROMS)
         init_hw();
 
     // Find and initialize other cpus
     smp_probe();
+
 
     // Setup interfaces that option roms may need
     bios32_setup();

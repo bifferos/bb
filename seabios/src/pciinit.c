@@ -542,6 +542,9 @@ static int pci_bios_init_root_regions(u32 start, u32 end)
 {
     struct pci_bus *bus = &busses[0];
 
+    // Bifferboard - r6040 nic causes panic here when enabled.
+    return 0;
+
     bus->r[PCI_REGION_TYPE_IO].base = 0xc000;
 
     if (bus->r[PCI_REGION_TYPE_MEM].sum < bus->r[PCI_REGION_TYPE_PREFMEM].sum) {
@@ -596,9 +599,11 @@ pci_setup(void)
     busses = malloc_tmp(sizeof(*busses) * busses_count);
     memset(busses, 0, sizeof(*busses) * busses_count);
     pci_bios_check_device_in_bus(0 /* host bus */);
+    
     if (pci_bios_init_root_regions(start, end) != 0) {
         panic("PCI: out of address space\n");
     }
+    
 
     dprintf(1, "=== PCI new allocation pass #2 ===\n");
     dprintf(1, "PCI: init bases bus 0 (primary)\n");

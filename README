@@ -1,16 +1,22 @@
 
-What have you done to OpenWrt?
+Instructions For use
 
-- Removed all stuff relating to targets other than the Bifferboard
-- Remove all stuff not relating to 2.6.37.6 kernel
-- Removed all scripts that aren't directly needed for the build
-- Kept Bifferboard related configuration
-- Avoided the need to do make package/symlinks, in order to avoid the
-  packages getting out of step with the core distribution
+# Build openwrt as normal
+cd openwrt
+make menuconfig
+make
 
-What have you done to Qemu?
+# Build qemu
+cd ..
+cd qemu
+./configure
+make
 
-- Removed all non-x86 target stuff and basically any files not 
-  needed for support of Bifferboard emulation.
+# Build hacked seabios (we don't use the Qemu bios because it's 128k).
+cd seabios
+make
+cd ..
 
+# Finally to run the openwrt image in the emulator
+./run.sh
 
