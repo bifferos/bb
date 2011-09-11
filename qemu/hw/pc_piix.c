@@ -43,6 +43,8 @@
 #  include <xen/hvm/hvm_info_table.h>
 #endif
 
+#include "rdc-gpio.h"
+
 #define MAX_IDE_BUS 2
 
 static const int ide_iobase[MAX_IDE_BUS] = { 0x1f0, 0x170 };
@@ -136,6 +138,9 @@ static void pc_init1(ram_addr_t ram_size,
 
     // Bifferboard has no VGA at all
     // pc_vga_init(pci_enabled? pci_bus: NULL);
+    
+    // Explicitly register the GPIO ports
+    rdc_gpio_pci_init(pci_bus);
 
     if (xen_enabled()) {
         pci_create_simple(pci_bus, -1, "xen-platform");
