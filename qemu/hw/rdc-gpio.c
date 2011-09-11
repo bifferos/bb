@@ -39,12 +39,13 @@ typedef struct panel_connection {
 } panel_connection_t;
 
 
+
+
 // Only deals with the first 'bank'.
 typedef struct PCIGPIOState {
     PCIDevice dev;
-    uint32_t data;      // last value the 32-bit data port took.
-    uint32_t control;   // last value the 32-bit control port took.
     panel_connection_t panel;   // connection to GPIO panel
+    uint8_t cfg_state[0x100];
 } PCIGPIOState;
 
 
@@ -202,14 +203,38 @@ static uint32_t bb_pin_read(panel_connection_t* h)
 }
 
 
+static uint32_t mask_it(uint32_t val, int len)
+{
+  switch (len)
+  {
+    case 1: return val & 0xff;
+    case 2: return val & 0xffff;
+    default:
+      return val;
+  }
+}
+
+
 static uint32_t pci_read_config(PCIDevice *d, uint32_t address, int len)
 {
     PCIGPIOState *pms = container_of(d, PCIGPIOState, dev);
     uint32_t out = 0xffffffff;
-    if (len!=4) return 0;
+    uint32_t top = address + len;
+    
+    if (address == 0x44) return 0xffffffff;  // ignore watchdog
+    
+    //printf("pci_read_config(0x%x, %d)\n", address, len);
+    
+    
+    // sanity check
+    if (top >= sizeof(pms->cfg_state))
+    {
+      printf("AWOOGA: pci read outside config range\n");
+      return mask_it(out, len);
+    }
 
-    /* Return last values written */
-    if (address == 0x4c)  /* read the data register */
+    // optimise the update of the array, only update pins when the read touches this area.
+    if ((address >= 0x4c) && (address <= 0x50))
     {
       /* return something predictable (but obviously wrong) if we're not connected */
       if (pms->panel.socket == -1) 
@@ -221,12 +246,11 @@ static uint32_t pci_read_config(PCIDevice *d, uint32_t address, int len)
         /* read all ports.  Should really mask out ports which aren't configured GPIO */
         out = bb_pin_read(&pms->panel);
       }
+      memcpy(&(pms->cfg_state[0x4c]), &out, 4);
     }
-    if (address == 0x48)  /* read the control register */
-    {
-      /* just return the last value written */
-      out = pms->control;
-    }
+
+    out = 0;
+    memcpy(&out, &(pms->cfg_state[address]), len);
     return out;
 }
 
@@ -234,10 +258,23 @@ static uint32_t pci_read_config(PCIDevice *d, uint32_t address, int len)
 static void pci_write_config(PCIDevice *d, uint32_t address, uint32_t val, int len)
 {
     PCIGPIOState *pms = container_of(d, PCIGPIOState, dev);
-    if (len!=4) return;  /* assume long access only for the moment */
-
-    if (address == 0x4c)
+    uint32_t top = address + len;
+    
+    if (address == 0x44) return;  // ignore watchdog writes completely.
+    
+    //printf("pci_write_config(0x%x, 0x%x)\n", address, val);
+    
+    // sanity check
+    if ((address + len) > sizeof(pms->cfg_state))
     {
+      printf("AWOOGA: pci write outside config range, ignoring\n");
+      return;
+    }
+    
+    // Update the PCI configuration
+    if ((address >= 0x4c) && (top <= 0x50))
+    {
+      //printf("Changing state on GPIO\n");
       if (pms->panel.socket == -1)
       {
         /* do nothing if we're not connected */
@@ -247,17 +284,9 @@ static void pci_write_config(PCIDevice *d, uint32_t address, uint32_t val, int l
         /* Update the panel with new values as needed */
         bb_pin_write(&pms->panel, val);
       }
-
-      /* Last value to be written */
-      pms->data = val;
-      return;
     }
-    if (address == 0x48)
-    {
-      /* Just store what was written */
-      pms->control = val;
-      return;
-    }
+    
+    memcpy(&(pms->cfg_state[address]), &val, len);
 }
 
 
@@ -286,6 +315,25 @@ void rdc_gpio_pci_init(PCIBus *bus)
     /* remember the state we set then only send changes */
     s->panel.last[i] = 'P';
   }
+  
+  memset(s->cfg_state, 0xff, sizeof(s->cfg_state));
+  
+  s->cfg_state[0] = 0xf3;
+  s->cfg_state[1] = 0x17;
+  s->cfg_state[2] = 0x30;
+  s->cfg_state[3] = 0x60;
+  s->cfg_state[4] = 0x0f;
+  s->cfg_state[5] = 0x00;
+  s->cfg_state[6] = 0x00;
+  s->cfg_state[7] = 0x04;
+  s->cfg_state[8] = 0x00;
+  s->cfg_state[9] = 0x00;
+  s->cfg_state[0xa] = 0x01;
+  s->cfg_state[0xb] = 0x06;
+  
+  s->cfg_state[0xe] = 0x00;
+  
+  
   return;
 }
 
