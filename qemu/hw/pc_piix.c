@@ -134,7 +134,8 @@ static void pc_init1(ram_addr_t ram_size,
 
     pc_register_ferr_irq(isa_get_irq(13));
 
-    pc_vga_init(pci_enabled? pci_bus: NULL);
+    // Bifferboard has no VGA at all
+    // pc_vga_init(pci_enabled? pci_bus: NULL);
 
     if (xen_enabled()) {
         pci_create_simple(pci_bus, -1, "xen-platform");
