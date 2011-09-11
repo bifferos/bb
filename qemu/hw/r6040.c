@@ -625,8 +625,8 @@ static PCIDeviceInfo r6040_info = {
     .qdev.size = sizeof(R6040State),
     .qdev.vmsd  = &vmstate_r6040,
     .init      = r6040_init_pci,
-    .vendor_id = 0x17f3,  /* RDC */
-    .device_id = 0x6040,   /* r6040 nic */
+    .vendor_id = PCI_VENDOR_ID_RDC,
+    .device_id = PCI_DEVICE_ID_RDC_R6040,
     .class_id   = PCI_CLASS_NETWORK_ETHERNET,
     .qdev.props = (Property[]) {
         DEFINE_NIC_PROPERTIES(R6040State, conf),
