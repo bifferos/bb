@@ -121,8 +121,13 @@ make_bios_writable(void)
     foreachbdf(bdf, 0) {
         u32 vendev = pci_config_readl(bdf, PCI_VENDOR_ID);
         u16 vendor = vendev & 0xffff, device = vendev >> 16;
-        if (vendor == PCI_VENDOR_ID_INTEL
-            && device == PCI_DEVICE_ID_INTEL_82441) {
+//        if (vendor == PCI_VENDOR_ID_INTEL
+//            && device == PCI_DEVICE_ID_INTEL_82441) {
+//            make_bios_writable_intel(bdf, I440FX_PAM0);
+//            return;
+//        }
+        if (vendor == PCI_VENDOR_ID_RDC
+            && device == PCI_DEVICE_ID_RDC_R6020) {
             make_bios_writable_intel(bdf, I440FX_PAM0);
             return;
         }

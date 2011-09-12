@@ -317,6 +317,7 @@ reloc_init(void)
     // Allocate space for init code.
     u32 initsize = code32init_end - code32init_start;
     u32 align = (u32)&_reloc_min_align;
+    dprintf(1, "memalign_tmp(%x, %x)\n", align, initsize);
     void *dest = memalign_tmp(align, initsize);
     if (!dest)
         panic("No space for init relocation.\n");

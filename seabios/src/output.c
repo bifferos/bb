@@ -133,9 +133,11 @@ static struct putcinfo screeninfo = { putc_screen };
 static void
 putc(struct putcinfo *action, char c)
 {
+    // send direct to serial port
+    // outb(c, 0x3f8);
     if (MODESEGMENT) {
         // Only debugging output supported in segmented mode.
-        putc_debug(action, c);
+//        putc_debug(action, c);
         return;
     }
 
