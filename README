@@ -1,22 +1,12 @@
 
-Instructions For use
+Instructions for use
 
-# Build openwrt as normal
-cd openwrt
-make menuconfig
-make
 
-# Build qemu
-cd ..
-cd qemu
-./configure
-make
+To build Bifferboard firmware and emulator type 'make'.
 
-# Build hacked seabios (we don't use the Qemu bios because it's 128k).
-cd seabios
-make
-cd ..
+To run the image under the emulator type 'make run'.
+CTRL-A, CTRL-X quits the emulator.
 
-# Finally to run the openwrt image in the emulator
-./run.sh
+Edit the Makefile to suit how you want to organise your virtual
+network.  See Qemu documentation at http://qemu.weilnetz.de/qemu-doc.html
 
