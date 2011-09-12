@@ -745,6 +745,8 @@ static PCIDevice *do_pci_register_device(PCIDevice *pci_dev, PCIBus *bus,
                      PCI_SLOT(devfn), PCI_FUNC(devfn), name, bus->devices[devfn]->name);
         return NULL;
     }
+    
+    
     pci_dev->bus = bus;
     pci_dev->devfn = devfn;
     pstrcpy(pci_dev->name, sizeof(pci_dev->name), name);
@@ -1567,6 +1569,12 @@ PCIDevice *pci_nic_init(NICInfo *nd, const char *default_model,
                      devaddr, pci_nic_names[i]);
         return NULL;
     }
+    
+    // Ensure the r6040 nic takes specific PCI address.
+    if (0 == strcmp(pci_nic_names[i], "r6040"))
+    {
+        devfn = 0x40;
+    }
 
     pci_dev = pci_create(bus, devfn, pci_nic_names[i]);
     dev = &pci_dev->qdev;
@@ -1672,7 +1680,7 @@ static int pci_qdev_init(DeviceState *qdev, DeviceInfo *base)
     if (info->is_express) {
         pci_dev->cap_present |= QEMU_PCI_CAP_EXPRESS;
     }
-
+    
     bus = FROM_QBUS(PCIBus, qdev_get_parent_bus(qdev));
     pci_dev = do_pci_register_device(pci_dev, bus, base->name,
                                      pci_dev->devfn, info);
