@@ -166,7 +166,7 @@ int main(int argc, char **argv)
 //#define DEBUG_NET
 //#define DEBUG_SLIRP
 
-#define DEFAULT_RAM_SIZE 128
+#define DEFAULT_RAM_SIZE 32
 
 #define MAX_VIRTIO_CONSOLES 1
 
