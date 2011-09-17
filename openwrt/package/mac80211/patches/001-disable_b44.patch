@@ -1,6 +1,6 @@
 --- a/config.mk
 +++ b/config.mk
-@@ -300,8 +300,8 @@ endif #CONFIG_SSB
+@@ -340,8 +340,8 @@ CONFIG_B43_BCMA_PIO=y
  
  CONFIG_P54_PCI=m
  
