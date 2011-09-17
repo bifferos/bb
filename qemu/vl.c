@@ -168,11 +168,17 @@ int main(int argc, char **argv)
 
 #define DEFAULT_RAM_SIZE 32
 
+#define DEFAULT_KMAX 0x10
+
 #define MAX_VIRTIO_CONSOLES 1
 
 static const char *data_dir;
 const char *bios_name = NULL;
+
+// Bifferboard values
 const char *firmware_name = NULL;
+uint16_t kmax_size = DEFAULT_KMAX;
+
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
 DisplayType display_type = DT_DEFAULT;
 int display_remote = 0;
@@ -2482,6 +2488,17 @@ int main(int argc, char **argv, char **envp)
             case QEMU_OPTION_firmware:
                 firmware_name = optarg;
                 break;
+            case QEMU_OPTION_kmax: {
+                int64_t value;
+                value = strtosz(optarg, NULL);
+                value /= 0x100000;  // remove the 'MB' suffix
+                if ((value < 0) || (value > 0x7f)) {
+                    fprintf(stderr, "qemu: invalid kmax: %s\n", optarg);
+                    exit(1);
+                }
+                kmax_size = value & 0xffff;
+                break;
+            }
             case QEMU_OPTION_singlestep:
                 singlestep = 1;
                 break;

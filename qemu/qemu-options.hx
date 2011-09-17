@@ -2088,6 +2088,15 @@ STEXI
 Set the filename for the firmware.
 ETEXI
 
+DEF("kmax", HAS_ARG, QEMU_OPTION_kmax,
+    "-kmax val         set kmax value [default="
+    stringify(DEFAULT_KMAX) "]\n", QEMU_ARCH_ALL)
+STEXI
+@item -kmax @var{n}
+@findex -kmax
+Set the kmax value to @var{n} .  Default is 0x10.
+ETEXI
+
 DEF("enable-kvm", 0, QEMU_OPTION_enable_kvm, \
     "-enable-kvm     enable KVM full virtualization support\n", QEMU_ARCH_ALL)
 STEXI

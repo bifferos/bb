@@ -14,7 +14,7 @@ all:
 # Run the emulation
 run:
 	./qemu/i386-softmmu/qemu \
-		-cpu 486 -m 32  \
+		-cpu 486 -m 0x32 -kmax 0xf  \
 		-bios seabios/out/bios.bin  \
 		-firmware openwrt/bin/rdc/openwrt-rdc-jffs2-64k-bifferboard.img   \
 		-kernel openwrt/bin/rdc/openwrt-rdc.bzImage   \

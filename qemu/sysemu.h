@@ -11,6 +11,7 @@
 /* vl.c */
 extern const char *bios_name;
 extern const char *firmware_name;
+extern uint16_t kmax_size;
 
 extern int vm_running;
 extern const char *qemu_name;
