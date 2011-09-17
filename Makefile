@@ -44,7 +44,7 @@ vde_stop:
 
 # Startup gdb with options to debug qemu
 qemu_debug:
-	gdb qemu/i386-softmmu/qemu -pid `ps -C qemu -o pid=` -x qemu-debug-startup.scr
+	gdb qemu/i386-softmmu/qemu -pid `ps -C qemu -o pid=` -x qemu/qemu-debug-startup.scr
 
 
 # Make a test image
