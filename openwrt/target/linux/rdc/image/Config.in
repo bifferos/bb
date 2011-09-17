@@ -1,0 +1,9 @@
+
+config TARGET_BIFFERBOARD_KMAX
+	hex "Kernel Max setting (kmax) (in units)"
+	depends TARGET_rdc_bifferboard
+	default 0x10
+	help
+	  Change this if your build fails because the kernel has become too
+	  large, or if you want to increase the space available to JFFS2.
+	  Don't forget to change the bootloader setting in Biffboot as well.

@@ -5,12 +5,8 @@
    either bb_upload8.py or bb_eth_upload8.py
 """
 
-import struct, sys
+import struct, sys, os
 
-# Increase the kmax value if the script gives errors about the kernel being 
-# too large.  You need to set the Biffboot kmax value to the same value you
-# use here.
-kmax = 0x10
 
 # No need to change this for 4MB devices, it's only used to tell you if 
 # the firmware is too large!
@@ -19,17 +15,19 @@ flash_size = 0x800000
 # This is always the same, for 1MB, 4MB and 8MB devices
 config_extent = 0x6000
 
-kernel_extent = kmax * 0x10000
 
 if __name__ == "__main__":
 
-  if len(sys.argv) != 4:
-    print  "usage: mkimg_bifferboard.py <kernel> <rootfs> <output file>"
+  if len(sys.argv) != 5:
+    print  "usage: mkimg_bifferboard.py <kernel> <rootfs> <output file> <kmax>"
     sys.exit(-1)
     
   bzimage = sys.argv[1]
   rootfs = sys.argv[2]
-  target = sys.argv[3]
+  target = sys.argv[3]  
+  kmax = eval(sys.argv[4])
+  
+  kernel_extent = kmax * 0x10000
 
   # Kernel first
   fw = file(bzimage).read()
