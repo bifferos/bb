@@ -55,7 +55,7 @@ else
   SQUASHFS_OPTS  := -comp lzma -processors 1
 endif
 
-JFFS2_BLOCKSIZE ?= 64k 128k
+JFFS2_BLOCKSIZE ?= 64k
 
 define add_jffs2_mark
 	echo -ne '\xde\xad\xc0\xde' >> $(1)
