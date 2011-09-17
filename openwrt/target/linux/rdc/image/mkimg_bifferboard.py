@@ -33,7 +33,12 @@ if __name__ == "__main__":
 
   # Kernel first
   fw = file(bzimage).read()
-  if len(fw) > (kernel_extent - config_extent):
+  kernel_size = len(fw)
+  kernel_max = kernel_extent - config_extent
+  if kernel_size > kernel_max:
+    print "Kernel size:", kernel_size
+    print "Kmax setting: 0x%x" % kmax
+    print "Max kernel allowed:", kernel_max
     raise IOError("Kernel too large")
 
   # Pad up to end of kernel partition
