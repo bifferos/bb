@@ -1,12 +1,12 @@
 # Makefile for OpenWrt
 #
-# Copyright (C) 2007 OpenWrt.org
+# Copyright (C) 2007-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
 
-RELEASE:=Kamikaze
+RELEASE:=Attitude Adjustment
 PREP_MK= OPENWRT_BUILD= QUIET=0
 
 include $(TOPDIR)/include/verbose.mk
@@ -40,6 +40,8 @@ endif
 
 SCAN_COOKIE?=$(shell echo $$$$)
 export SCAN_COOKIE
+
+SUBMAKE:=umask 022; $(SUBMAKE)
 
 prepare-mk: FORCE ;
 
@@ -132,6 +134,13 @@ prereq:: prepare-tmpinfo .config
 
 %::
 	@+$(PREP_MK) $(NO_TRACE_MAKE) -r -s prereq
+	@( \
+		cp .config tmp/.config; \
+		./scripts/config/conf -D tmp/.config -w tmp/.config Config.in > /dev/null 2>&1; \
+		if ./scripts/kconfig.pl '>' .config tmp/.config | grep -q CONFIG; then \
+			echo "WARNING: your configuration is out of sync. Please run make menuconfig, oldconfig or defconfig!"; \
+		fi \
+	)
 	@+$(SUBMAKE) -r $@
 
 help:

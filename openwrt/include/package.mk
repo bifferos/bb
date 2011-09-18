@@ -11,14 +11,27 @@ PKG_BUILD_DIR ?= $(BUILD_DIR)/$(PKG_NAME)$(if $(PKG_VERSION),-$(PKG_VERSION))
 PKG_INSTALL_DIR ?= $(PKG_BUILD_DIR)/ipkg-install
 PKG_MD5SUM ?= unknown
 PKG_BUILD_PARALLEL ?=
-PKG_JOBS ?= $(if $(PKG_BUILD_PARALLEL)$(CONFIG_PKG_DEFAULT_PARALLEL),$(if $(CONFIG_PKG_BUILD_PARALLEL),-j$(CONFIG_PKG_BUILD_JOBS)))
+
+ifeq ($(strip $(PKG_BUILD_PARALLEL)),0)
+PKG_JOBS?=-j1
+else
+PKG_JOBS?=$(if $(PKG_BUILD_PARALLEL)$(CONFIG_PKG_DEFAULT_PARALLEL),\
+	$(if $(CONFIG_PKG_BUILD_PARALLEL),-j$(CONFIG_PKG_BUILD_JOBS),-j1),-j1)
+endif
 
 include $(INCLUDE_DIR)/prereq.mk
 include $(INCLUDE_DIR)/host.mk
 include $(INCLUDE_DIR)/unpack.mk
 include $(INCLUDE_DIR)/depends.mk
 
-STAMP_PREPARED=$(PKG_BUILD_DIR)/.prepared$(if $(QUILT)$(DUMP),,_$(shell $(call find_md5,${CURDIR} $(PKG_FILE_DEPENDS),)))
+STAMP_NO_AUTOREBUILD=$(wildcard $(PKG_BUILD_DIR)/.no_autorebuild)
+PREV_STAMP_PREPARED:=$(if $(STAMP_NO_AUTOREBUILD),$(wildcard $(PKG_BUILD_DIR)/.prepared*))
+ifneq ($(PREV_STAMP_PREPARED),)
+  STAMP_PREPARED:=$(PREV_STAMP_PREPARED)
+  CONFIG_AUTOREBUILD:=
+else
+  STAMP_PREPARED=$(PKG_BUILD_DIR)/.prepared$(if $(QUILT)$(DUMP),,_$(shell $(call find_md5,${CURDIR} $(PKG_FILE_DEPENDS),)))
+endif
 STAMP_CONFIGURED:=$(PKG_BUILD_DIR)/.configured$(if $(DUMP),,_$(call confvar,$(PKG_CONFIG_DEPENDS)))
 STAMP_BUILT:=$(PKG_BUILD_DIR)/.built
 STAMP_INSTALLED:=$(STAGING_DIR)/stamp/.$(PKG_NAME)_installed
@@ -37,6 +50,7 @@ override MAKEFLAGS=
 CONFIG_SITE:=$(INCLUDE_DIR)/site/$(REAL_GNU_TARGET_NAME)
 CUR_MAKEFILE:=$(filter-out Makefile,$(firstword $(MAKEFILE_LIST)))
 SUBMAKE:=$(NO_TRACE_MAKE) $(if $(CUR_MAKEFILE),-f $(CUR_MAKEFILE))
+PKG_CONFIG_PATH=$(STAGING_DIR)/usr/lib/pkgconfig
 
 ifeq ($(DUMP)$(filter prereq clean refresh update,$(MAKECMDGOALS)),)
   ifneq ($(if $(QUILT),,$(CONFIG_AUTOREBUILD)),)
@@ -65,12 +79,9 @@ define Download/default
   SUBDIR:=$(PKG_SOURCE_SUBDIR)
   PROTO:=$(PKG_SOURCE_PROTO)
   $(if $(PKG_SOURCE_MIRROR),MIRROR:=$(filter 1,$(PKG_MIRROR)))
+  $(if $(PKG_MIRROR_MD5SUM),MIRROR_MD5SUM:=$(PKG_MIRROR_MD5SUM))
   VERSION:=$(PKG_SOURCE_VERSION)
   MD5SUM:=$(PKG_MD5SUM)
-endef
-
-define sep
-
 endef
 
 define Build/Exports/Default
@@ -78,8 +89,9 @@ define Build/Exports/Default
   $(1) : export STAGING_PREFIX=$$(STAGING_DIR)/usr
   $(1) : export PATH=$$(TARGET_PATH_PKG)
   $(1) : export CONFIG_SITE:=$$(CONFIG_SITE)
-  $(1) : export PKG_CONFIG_PATH=$$(STAGING_DIR)/usr/lib/pkgconfig
-  $(1) : export PKG_CONFIG_LIBDIR=$$(STAGING_DIR)/usr/lib/pkgconfig
+  $(1) : export PKG_CONFIG_PATH:=$$(PKG_CONFIG_PATH)
+  $(1) : export PKG_CONFIG_LIBDIR:=$$(PKG_CONFIG_PATH)
+  $(1) : export CCACHE_DIR:=$(STAGING_DIR)/ccache
 endef
 Build/Exports=$(Build/Exports/Default)
 
@@ -126,8 +138,11 @@ define Build/DefaultTargets
 		$(call $(hook),$(TMP_DIR)/stage-$(PKG_NAME),$(TMP_DIR)/stage-$(PKG_NAME)/host)$(sep)\
 	)
 	if [ -d $(TMP_DIR)/stage-$(PKG_NAME) ]; then \
-		(cd $(TMP_DIR)/stage-$(PKG_NAME); find ./ > $(STAGING_DIR)/packages/$(STAGING_FILES_LIST)); \
-		$(CP) $(TMP_DIR)/stage-$(PKG_NAME)/* $(STAGING_DIR)/; \
+		(cd $(TMP_DIR)/stage-$(PKG_NAME); find ./ > $(TMP_DIR)/stage-$(PKG_NAME).files); \
+		$(call locked, \
+			mv $(TMP_DIR)/stage-$(PKG_NAME).files $(STAGING_DIR)/packages/$(STAGING_FILES_LIST) && \
+			$(CP) $(TMP_DIR)/stage-$(PKG_NAME)/* $(STAGING_DIR)/; \
+		,staging-dir); \
 	fi
 	rm -rf $(TMP_DIR)/stage-$(PKG_NAME)
 	touch $$@

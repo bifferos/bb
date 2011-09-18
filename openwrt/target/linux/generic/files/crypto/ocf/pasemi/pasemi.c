@@ -17,7 +17,8 @@
  * Foundation, Inc., 59 Temple Place, Suite 330, Boston, MA  02111-1307 USA
  */
 
-#ifndef AUTOCONF_INCLUDED
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #include <linux/module.h>
@@ -237,11 +238,6 @@ pasemi_newsession(device_t dev, u_int32_t *sidp, struct cryptoini *cri)
 
 	if (encini) {
 		ses->ccmd = ccmd;
-
-		/* get an IV */
-		/* XXX may read fewer than requested */
-		get_random_bytes(ses->civ, sizeof(ses->civ));
-
 		ses->keysz = (encini->cri_klen - 63) / 64;
 		memcpy(ses->key, encini->cri_key, (ses->keysz + 1) * 8);
 
@@ -448,6 +444,8 @@ pasemi_process(device_t dev, struct cryptop *crp, int hint)
 		if (enccrd->crd_flags & CRD_F_ENCRYPT) {
 			if (enccrd->crd_flags & CRD_F_IV_EXPLICIT)
 				memcpy(ivp, enccrd->crd_iv, ivsize);
+			else
+				read_random(ivp, ivsize);
 			/* If IV is not present in the buffer already, it has to be copied there */
 			if ((enccrd->crd_flags & CRD_F_IV_PRESENT) == 0)
 				crypto_copyback(crp->crp_flags, crp->crp_buf,

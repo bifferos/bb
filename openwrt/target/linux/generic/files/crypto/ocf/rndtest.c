@@ -36,14 +36,14 @@
  * POSSIBILITY OF SUCH DAMAGE.
  */
 
-#ifndef AUTOCONF_INCLUDED
+#include <linux/version.h>
+#if LINUX_VERSION_CODE < KERNEL_VERSION(2,6,38) && !defined(AUTOCONF_INCLUDED)
 #include <linux/config.h>
 #endif
 #include <linux/module.h>
 #include <linux/list.h>
 #include <linux/wait.h>
 #include <linux/time.h>
-#include <linux/version.h>
 #include <linux/unistd.h>
 #include <linux/kernel.h>
 #include <linux/string.h>

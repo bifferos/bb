@@ -10,6 +10,7 @@ define Package/Default
   SECTION:=opt
   CATEGORY:=Extra packages
   DEPENDS:=
+  MDEPENDS:=
   PROVIDES:=
   EXTRA_DEPENDS:=
   MAINTAINER:=OpenWrt Developers Team <openwrt-devel@openwrt.org>
@@ -41,6 +42,7 @@ define Package/Default
   TITLE:=
   KCONFIG:=
   BUILDONLY:=
+  HIDDEN:=
   URL:=
   VARIANT:=
 endef

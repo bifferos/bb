@@ -12,13 +12,10 @@ __target_inc=1
 DEVICE_TYPE?=router
 
 # Default packages - the really basic set
-DEFAULT_PACKAGES:=base-files libc libgcc busybox dropbear mtd uci opkg udevtrigger hotplug2
+DEFAULT_PACKAGES:=base-files libc libgcc busybox dropbear mtd uci opkg hotplug2
 # For router targets
-DEFAULT_PACKAGES.router:=
+DEFAULT_PACKAGES.router:=dnsmasq iptables ppp ppp-mod-pppoe kmod-ipt-nathelper firewall
 DEFAULT_PACKAGES.bootloader:=
-
-# Add device specific packages
-DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.$(DEVICE_TYPE))
 
 ifneq ($(DUMP),)
   all: dumpinfo
@@ -30,6 +27,9 @@ ifeq ($(DUMP),)
   SUBTARGET:=$(strip $(foreach subdir,$(patsubst $(PLATFORM_DIR)/%/target.mk,%,$(wildcard $(PLATFORM_DIR)/*/target.mk)),$(if $(CONFIG_TARGET_$(call target_conf,$(BOARD)_$(subdir))),$(subdir))))
 else
   PLATFORM_DIR:=${CURDIR}
+  ifeq ($(SUBTARGETS),)
+    SUBTARGETS:=$(strip $(patsubst $(PLATFORM_DIR)/%/target.mk,%,$(wildcard $(PLATFORM_DIR)/*/target.mk)))
+  endif
 endif
 
 TARGETID:=$(BOARD)$(if $(SUBTARGET),/$(SUBTARGET))
@@ -47,6 +47,9 @@ else
     -include ./$(SUBTARGET)/target.mk
   endif
 endif
+
+# Add device specific packages (here below to allow device type set from subtarget)
+DEFAULT_PACKAGES += $(DEFAULT_PACKAGES.$(DEVICE_TYPE))
 
 define Profile/Default
   NAME:=
@@ -108,27 +111,54 @@ GENERIC_PLATFORM_DIR := $(TOPDIR)/target/linux/generic
 GENERIC_PATCH_DIR := $(GENERIC_PLATFORM_DIR)/patches$(if $(wildcard $(GENERIC_PLATFORM_DIR)/patches-$(KERNEL_PATCHVER)),-$(KERNEL_PATCHVER))
 GENERIC_FILES_DIR := $(foreach dir,$(wildcard $(GENERIC_PLATFORM_DIR)/files $(GENERIC_PLATFORM_DIR)/files-$(KERNEL_PATCHVER)),"$(dir)")
 
-GENERIC_LINUX_CONFIG?=$(firstword $(wildcard $(GENERIC_PLATFORM_DIR)/config-$(KERNEL_PATCHVER) $(GENERIC_PLATFORM_DIR)/config-default))
-LINUX_CONFIG?=$(firstword $(wildcard $(foreach subdir,$(PLATFORM_DIR) $(PLATFORM_SUBDIR),$(subdir)/config-$(KERNEL_PATCHVER) $(subdir)/config-default)) $(PLATFORM_DIR)/config-$(KERNEL_PATCHVER))
-LINUX_SUBCONFIG?=$(if $(SHARED_LINUX_CONFIG),,$(firstword $(wildcard $(PLATFORM_SUBDIR)/config-$(KERNEL_PATCHVER) $(PLATFORM_SUBDIR)/config-default)))
-ifeq ($(LINUX_CONFIG),$(LINUX_SUBCONFIG))
-  LINUX_SUBCONFIG:=
+__config_name_list = $(1)/config-$(KERNEL_PATCHVER) $(1)/config-default
+__config_list = $(firstword $(wildcard $(call __config_name_list,$(1))))
+find_kernel_config=$(if $(__config_list),$(__config_list),$(lastword $(__config_name_list)))
+
+GENERIC_LINUX_CONFIG = $(call find_kernel_config,$(GENERIC_PLATFORM_DIR))
+LINUX_TARGET_CONFIG = $(call find_kernel_config,$(PLATFORM_DIR))
+ifneq ($(PLATFORM_DIR),$(PLATFORM_SUBDIR))
+  LINUX_SUBTARGET_CONFIG = $(call find_kernel_config,$(PLATFORM_SUBDIR))
 endif
-LINUX_CONFCMD=$(if $(LINUX_CONFIG), \
-	$(if $(GENERIC_LINUX_CONFIG),,$(error The generic kernel config for your kernel version is missing)) \
-	$(if $(LINUX_CONFIG),,$(error The target kernel config for your kernel version is missing)) \
-	$(SCRIPT_DIR)/kconfig.pl \
-		+ $(GENERIC_LINUX_CONFIG) \
-		$(if $(LINUX_SUBCONFIG),+ $(LINUX_CONFIG) $(LINUX_SUBCONFIG),$(LINUX_CONFIG)), \
-	true)
+
+# config file list used for compiling
+LINUX_KCONFIG_LIST = $(wildcard $(GENERIC_LINUX_CONFIG) $(LINUX_TARGET_CONFIG) $(LINUX_SUBTARGET_CONFIG) $(TOPDIR)/env/kernel-config)
+
+# default config list for reconfiguring
+# defaults to subtarget if subtarget exists and target does not
+# defaults to target otherwise
+USE_SUBTARGET_CONFIG = $(if $(wildcard $(LINUX_TARGET_CONFIG)),,$(if $(LINUX_SUBTARGET_CONFIG),1))
+
+LINUX_RECONFIG_LIST = $(wildcard $(GENERIC_LINUX_CONFIG) $(LINUX_TARGET_CONFIG) $(if $(USE_SUBTARGET_CONFIG),$(LINUX_SUBTARGET_CONFIG)))
+LINUX_RECONFIG_TARGET = $(if $(USE_SUBTARGET_CONFIG),$(LINUX_SUBTARGET_CONFIG),$(LINUX_TARGET_CONFIG))
+
+# select the config file to be cahnged by kernel_menuconfig/kernel_oldconfig
+ifeq ($(CONFIG_TARGET),platform)
+  LINUX_RECONFIG_LIST = $(wildcard $(GENERIC_LINUX_CONFIG) $(LINUX_TARGET_CONFIG))
+  LINUX_RECONFIG_TARGET = $(LINUX_TARGET_CONFIG)
+endif
+ifeq ($(CONFIG_TARGET),subtarget)
+  LINUX_RECONFIG_LIST = $(wildcard $(GENERIC_LINUX_CONFIG) $(LINUX_TARGET_CONFIG) $(LINUX_SUBTARGET_CONFIG))
+  LINUX_RECONFIG_TARGET = $(LINUX_SUBTARGET_CONFIG)
+endif
+ifeq ($(CONFIG_TARGET),env)
+  LINUX_RECONFIG_LIST = $(LINUX_KCONFIG_LIST)
+  LINUX_RECONFIG_TARGET = $(TOPDIR)/env/kernel-config
+endif
+
+__linux_confcmd = $(SCRIPT_DIR)/kconfig.pl $(2) $(patsubst %,+,$(wordlist 2,9999,$(1))) $(1)
+
+LINUX_CONF_CMD = $(call __linux_confcmd,$(LINUX_KCONFIG_LIST),)
+LINUX_RECONF_CMD = $(call __linux_confcmd,$(LINUX_RECONFIG_LIST),)
+LINUX_RECONF_DIFF = $(call __linux_confcmd,$(filter-out $(LINUX_RECONFIG_TARGET),$(LINUX_RECONFIG_LIST)),'>')
 
 ifeq ($(DUMP),1)
   BuildTarget=$(BuildTargets/DumpCurrent)
 
   ifneq ($(BOARD),)
     TMP_CONFIG:=$(TMP_DIR)/.kconfig-$(call target_conf,$(TARGETID))
-    $(TMP_CONFIG): $(GENERIC_LINUX_CONFIG) $(LINUX_CONFIG) $(LINUX_SUBCONFIG)
-		$(LINUX_CONFCMD) > $@ || rm -f $@
+    $(TMP_CONFIG): $(LINUX_KCONFIG_LIST)
+		$(LINUX_CONF_CMD) > $@ || rm -f $@
     -include $(TMP_CONFIG)
     .SILENT: $(TMP_CONFIG)
     .PRECIOUS: $(TMP_CONFIG)
@@ -157,16 +187,17 @@ ifeq ($(DUMP),1)
     # remove duplicates
     FEATURES:=$(sort $(FEATURES))
   endif
-  DEFAULT_CFLAGS_i386=-O2 -pipe -march=i486 -funit-at-a-time
-  DEFAULT_CFLAGS_x86_64=-O2 -pipe -march=athlon64 -funit-at-a-time
-  DEFAULT_CFLAGS_m68k=-Os -pipe -mcfv4e -funit-at-a-time
-  DEFAULT_CFLAGS_mips=-Os -pipe -mips32 -mtune=mips32 -funit-at-a-time
+  DEFAULT_CFLAGS_i386=-O2 -pipe -march=i486 -fno-caller-saves
+  DEFAULT_CFLAGS_x86_64=-O2 -pipe -march=athlon64 -fno-caller-saves
+  DEFAULT_CFLAGS_m68k=-Os -pipe -mcfv4e -fno-caller-saves
+  DEFAULT_CFLAGS_mips=-Os -pipe -mips32 -mtune=mips32 -fno-caller-saves
   DEFAULT_CFLAGS_mipsel=$(DEFAULT_CFLAGS_mips)
-  DEFAULT_CFLAGS_mips64=-Os -pipe -mips64 -mtune=mips64 -mabi=64 -funit-at-a-time
+  DEFAULT_CFLAGS_mips64=-Os -pipe -mips64 -mtune=mips64 -mabi=64 -fno-caller-saves
   DEFAULT_CFLAGS_mips64el=$(DEFAULT_CFLAGS_mips64)
-  DEFAULT_CFLAGS_arm=-Os -pipe -march=armv5te -mtune=xscale -funit-at-a-time
+  DEFAULT_CFLAGS_sparc=-Os -pipe -mcpu=ultrasparc -fno-caller-saves
+  DEFAULT_CFLAGS_arm=-Os -pipe -march=armv5te -mtune=xscale -fno-caller-saves
   DEFAULT_CFLAGS_armeb=$(DEFAULT_CFLAGS_arm)
-  DEFAULT_CFLAGS=$(if $(DEFAULT_CFLAGS_$(ARCH)),$(DEFAULT_CFLAGS_$(ARCH)),-Os -pipe -funit-at-a-time)
+  DEFAULT_CFLAGS=$(if $(DEFAULT_CFLAGS_$(ARCH)),$(DEFAULT_CFLAGS_$(ARCH)),-Os -pipe -fno-caller-saves)
 endif
 
 define BuildTargets/DumpCurrent
@@ -174,7 +205,6 @@ define BuildTargets/DumpCurrent
   dumpinfo:
 	@echo 'Target: $(TARGETID)'; \
 	 echo 'Target-Board: $(BOARD)'; \
-	 echo 'Target-Kernel: $(KERNEL)'; \
 	 echo 'Target-Name: $(BOARDNAME)$(if $(SUBTARGETS),$(if $(SUBTARGET),))'; \
 	 echo 'Target-Path: $(subst $(TOPDIR)/,,$(PWD))'; \
 	 echo 'Target-Arch: $(ARCH)'; \
@@ -185,6 +215,7 @@ define BuildTargets/DumpCurrent
 	 echo 'Linux-Version: $(LINUX_VERSION)'; \
 	 echo 'Linux-Release: $(LINUX_RELEASE)'; \
 	 echo 'Linux-Kernel-Arch: $(LINUX_KARCH)'; \
+	$(if $(SUBTARGET),,$(if $(DEFAULT_SUBTARGET), echo 'Default-Subtarget: $(DEFAULT_SUBTARGET)'; ))
 	 echo 'Target-Description:'; \
 	 $(SH_FUNC) getvar $(call shvar,Target/Description); \
 	 echo '@@'; \
