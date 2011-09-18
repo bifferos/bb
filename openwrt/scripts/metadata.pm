@@ -66,6 +66,7 @@ sub parse_package_metadata($) {
 			$pkg->{title} = "";
 			$pkg->{default} = "m if ALL";
 			$pkg->{depends} = [];
+			$pkg->{mdepends} = [];
 			$pkg->{builddepends} = [];
 			$pkg->{buildtypes} = [];
 			$pkg->{subdir} = $subdir;
@@ -111,7 +112,9 @@ sub parse_package_metadata($) {
 				push @{$package{$vpkg}->{vdepends}}, $pkg->{name};
 			}
 		};
+		/^Menu-Depends: \s*(.+)\s*$/ and $pkg->{mdepends} = [ split /\s+/, $1 ];
 		/^Depends: \s*(.+)\s*$/ and $pkg->{depends} = [ split /\s+/, $1 ];
+		/^Hidden: \s*(.+)\s*$/ and $pkg->{hidden} = 1;
 		/^Build-Variant: \s*([\w\-]+)\s*/ and $pkg->{variant} = $1;
 		/^Build-Only: \s*(.+)\s*$/ and $pkg->{buildonly} = 1;
 		/^Build-Depends: \s*(.+)\s*$/ and $pkg->{builddepends} = [ split /\s+/, $1 ];

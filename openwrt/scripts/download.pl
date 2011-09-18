@@ -24,7 +24,7 @@ sub localmirrors {
 	open LM, "$scriptdir/localmirrors" and do {
 	    while (<LM>) {
 			chomp $_;
-			push @mlist, $_;
+			push @mlist, $_ if $_;
 		}
 		close LM;
 	};
@@ -77,7 +77,7 @@ sub download
 		system("cp -vf $cache/$filename $target/$filename.dl") == 0 or return;
 		system("$md5cmd $target/$filename.dl > \"$target/$filename.md5sum\" ") == 0 or return;
 	} else {
-		open WGET, "wget -t5 --timeout=20 $options -O- \"$mirror/$filename\" |" or die "Cannot launch wget.\n";
+		open WGET, "wget -t5 --timeout=20 --no-check-certificate $options -O- \"$mirror/$filename\" |" or die "Cannot launch wget.\n";
 		open MD5SUM, "| $md5cmd > \"$target/$filename.md5sum\"" or die "Cannot launch md5sum.\n";
 		open OUTPUT, "> $target/$filename.dl" or die "Cannot create file $target/$filename.dl: $!\n";
 		my $buffer;
@@ -135,14 +135,22 @@ foreach my $mirror (@ARGV) {
 		push @mirrors, "ftp://ftp.leo.org/pub/comp/os/unix/gnu/$1";
 		push @mirrors, "ftp://ftp.digex.net/pub/gnu/$1";
 	} elsif ($mirror =~ /^\@KERNEL\/(.+)$/) {
-		push @mirrors, "ftp://ftp.geo.kernel.org/pub/$1";
-		push @mirrors, "http://ftp.geo.kernel.org/pub/$1";
-		push @mirrors, "ftp://ftp.all.kernel.org/pub/$1";
-		push @mirrors, "http://ftp.all.kernel.org/pub/$1";
-		push @mirrors, "ftp://ftp.de.kernel.org/pub/$1";
-		push @mirrors, "http://ftp.de.kernel.org/pub/$1";
-		push @mirrors, "ftp://ftp.fr.kernel.org/pub/$1";
-		push @mirrors, "http://ftp.fr.kernel.org/pub/$1";
+		my @extra = ( $1 );
+		if ($filename =~ /linux-\d+\.\d+(?:\.\d+)?-rc/) {
+			push @extra, "$extra[0]/testing";
+		} elsif ($filename =~ /linux-(\d+\.\d+(?:\.\d+)?)/) {
+			push @extra, "$extra[0]/longterm/v$1";
+		}		
+		foreach my $dir (@extra) {
+			push @mirrors, "ftp://ftp.geo.kernel.org/pub/$dir";
+			push @mirrors, "http://ftp.geo.kernel.org/pub/$dir";
+			push @mirrors, "ftp://ftp.all.kernel.org/pub/$dir";
+			push @mirrors, "http://ftp.all.kernel.org/pub/$dir";
+			push @mirrors, "ftp://ftp.de.kernel.org/pub/$dir";
+			push @mirrors, "http://ftp.de.kernel.org/pub/$dir";
+			push @mirrors, "ftp://ftp.fr.kernel.org/pub/$dir";
+			push @mirrors, "http://ftp.fr.kernel.org/pub/$dir";
+		}
     } elsif ($mirror =~ /^\@GNOME\/(.+)$/) {
 		push @mirrors, "http://ftp.gnome.org/pub/GNOME/sources/$1";
 		push @mirrors, "http://ftp.unina.it/pub/linux/GNOME/sources/$1";
