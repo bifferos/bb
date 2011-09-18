@@ -15,7 +15,6 @@ define cc
 	$(CC) $(HOST_CFLAGS) -include endian.h -o $(HOST_BUILD_DIR)/bin/$(firstword $(1)) $(foreach src,$(1),src/$(src).c) $(2)
 endef
 
-
 define Host/Compile
 	mkdir -p $(HOST_BUILD_DIR)/bin
 	$(call cc,addpattern)
@@ -33,7 +32,7 @@ define Host/Compile
 	$(call cc,mkcasfw)
 	$(call cc,mkfwimage,-lz)
 	$(call cc,mkfwimage2,-lz)
-	$(call cc,imagetag)
+	$(call cc,imagetag imagetag_cmdline)
 	$(call cc,add_header)
 	$(call cc,makeamitbin)
 	$(call cc,encode_crc)
@@ -48,6 +47,13 @@ define Host/Compile
 	$(call cc,mktitanimg)
 	$(call cc,mkchkimg)
 	$(call cc,mkzcfw cyg_crc32)
+	$(call cc,spw303v)
+	$(call cc,trx2edips)
+	$(call cc,xorimage)
+	$(call cc,buffalo-enc buffalo-lib, -Wall)
+	$(call cc,buffalo-tag buffalo-lib, -Wall)
+	$(call cc,buffalo-tftp buffalo-lib, -Wall)
+	$(call cc,mkwrgimg md5, -Wall)
 endef
 
 define Host/Install

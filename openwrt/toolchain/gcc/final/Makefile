@@ -8,7 +8,7 @@ GCC_CONFIGURE += \
 	--enable-threads \
 	--with-slibdir=$(TOOLCHAIN_DIR)/lib
 
-ifneq ($(CONFIG_GCC_VERSION_4_5),)
+ifneq ($(CONFIG_GCC_VERSION_4_5)$(CONFIG_GCC_VERSION_4_6),)
   GCC_CONFIGURE += \
 	--enable-lto \
 	--with-libelf=$(TOPDIR)/staging_dir/host
@@ -20,6 +20,11 @@ ifneq ($(CONFIG_TLS_SUPPORT),)
 else
   GCC_CONFIGURE += \
 	--disable-tls
+endif
+
+ifneq ($(CONFIG_SJLJ_EXCEPTIONS),)
+  GCC_CONFIGURE += \
+	--enable-sjlj-exceptions
 endif
 
 define Host/Configure

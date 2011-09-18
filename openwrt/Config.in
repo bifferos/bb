@@ -1,4 +1,4 @@
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2010 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -17,7 +17,6 @@ menu "Target Images"
 	menuconfig TARGET_ROOTFS_INITRAMFS
 		bool "ramdisk"
 		default y if USES_INITRAMFS
-		depends LINUX_2_6
 		help
 		  Embed the rootfs into the kernel (initramfs)
 
@@ -27,7 +26,6 @@ menu "Target Images"
 			default TARGET_INITRAMFS_COMPRESSION_LZMA if TARGET_ramips
 			default TARGET_INITRAMFS_COMPRESSION_NONE
 			depends TARGET_ROOTFS_INITRAMFS
-			depends !LINUX_2_6_25
 			help
 			  Select ramdisk compression.
 
@@ -45,6 +43,10 @@ menu "Target Images"
 
 			config TARGET_INITRAMFS_COMPRESSION_LZO
 				bool "lzo"
+
+			config TARGET_INITRAMFS_COMPRESSION_XZ
+				bool "xz"
+				depends LINUX_2_6_38
 		endchoice
 
 	comment "Root filesystem archives"
@@ -63,12 +65,12 @@ menu "Target Images"
 
 	comment "Root filesystem images"
 
-	config TARGET_ROOTFS_EXT2FS
-		bool "ext2"
-		default y if USES_EXT2
+	config TARGET_ROOTFS_EXT4FS
+		bool "ext4"
+		default y if USES_EXT4
 		depends !TARGET_ROOTFS_INITRAMFS
 		help
-		  Ext2 file system with some free space for uml images
+		  Ext4 file system with some free space for uml images
 
 	config TARGET_ROOTFS_ISO
 		bool "iso"
@@ -104,14 +106,14 @@ menu "Target Images"
 
 	config TARGET_ROOTFS_PARTSIZE
 		int "Root filesystem partition size (in MB)"
-		depends X86_GRUB_IMAGES || TARGET_ROOTFS_EXT2FS || TARGET_rb532
+		depends X86_GRUB_IMAGES || TARGET_ROOTFS_EXT4FS || TARGET_rb532
 		default 48
 		help
 		    Allows you to change the root filesystem partition size
 
 	config TARGET_ROOTFS_MAXINODE
 		int "Maximum number of inodes in root filesystem"
-		depends TARGET_ROOTFS_EXT2FS
+		depends TARGET_ROOTFS_EXT4FS
 		default 6000
 		help
 		    Allows you to change the maximum number of inodes in the root filesystem
@@ -126,6 +128,10 @@ menu "Global build settings"
 
 	comment "General build options"
 
+	config DISPLAY_SUPPORT
+		bool "Show packages that require graphics support (local or remote)"
+		default n
+
 	config BUILD_PATENTED
 		default y
 		bool "Compile with support for patented functionality"
@@ -134,12 +140,12 @@ menu "Global build settings"
 		  In case software provides optional support for patented functionality,
 		  this optional support will get disabled for this package.
 
-	config LARGEFILE
-		bool
-		prompt "Enable large file (files > 2 GB) support"
-		default y
+	config BUILD_NLS
+		default n
+		bool "Compile with full language support"
 		help
-		  Enable large file (files > 2 GB) support.
+		  When this option is enabled, packages are built with the full versions of iconv and GNU gettext
+		  instead of the default OpenWrt stubs.
 
 	config SHADOW_PASSWORDS
 		bool
@@ -169,7 +175,6 @@ menu "Global build settings"
 	config KERNEL_DEBUG_FS
 		bool "Compile the kernel with Debug FileSystem enabled"
 		default y
-		depends LINUX_2_6
 		help
 		  debugfs is a virtual file system that kernel developers use to put
 		  debugging files into. Enable this option to be able to read and
@@ -217,6 +222,14 @@ menu "Global build settings"
 		  This is only useful for debugging purposes to send messages
 		  over the serial console in early boot.
 		  Enable this to debug early boot problems.
+
+	config KERNEL_AIO
+		bool "Compile the kernel with asynchronous IO support"
+		default n
+
+	config KERNEL_MAGIC_SYSRQ
+		bool "Compile the kernel with SysRq support"
+		default n
 
 	comment "Package build options"
 
@@ -334,7 +347,6 @@ menu "Global build settings"
 		  Specifies arguments passed to the strip command when stripping binaries
 
 	config STRIP_KERNEL_EXPORTS
-		depends LINUX_2_6
 		bool "Strip unnecessary exports from the kernel image"
 		help
 		  Reduces kernel size by stripping unused kernel exports from the kernel image
@@ -412,6 +424,11 @@ menuconfig DEVEL
 		  Enter a full pathname to a local reference git repository.
 		  In this instance, the --refererence option of git clone will
 		  be used thus creating a quick local clone of your repo.
+
+	config BUILD_LOG
+		bool "Enable log files during build process" if DEVEL
+		help
+		  If enabled log files will be written to the ./log directory
 
 menuconfig TARGET_OPTIONS
 	bool "Target Options"  if DEVEL

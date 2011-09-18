@@ -7,20 +7,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mtd
-PKG_VERSION:=20101002
+PKG_VERSION:=20101124
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:=git://git.infradead.org/mtd-utils.git
 PKG_SOURCE_PROTO:=git
-PKG_SOURCE_VERSION:=b8bbd73bb5bd0b1f5f2c6a3441486d69a45cc79c
+PKG_SOURCE_VERSION:=c1a7889da754dfac2f130772daef783980c65d5d
 PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
-PKG_MD5SUM:=475a6bd4b26bdde63f759f9e1f7bc461
+PKG_MD5SUM:=78e5e74957f458bd808a6d4af0a38071
 PKG_CAT:=zcat
 
 HOST_BUILD_DIR:=$(BUILD_DIR_HOST)/$(PKG_NAME)-$(PKG_VERSION)
 
 include $(INCLUDE_DIR)/host-build.mk
 
+HOST_CFLAGS += -I$(STAGING_DIR_HOST)/include/e2fsprogs
 CFLAGS := $(HOST_CFLAGS) -I$(HOST_BUILD_DIR)/include -L$(HOST_BUILD_DIR) -L$(STAGING_DIR_HOST)/lib -DNO_NATIVE_SUPPORT
 ifneq ($(HOST_OS),Linux)
 CFLAGS += -Dloff_t=off_t -D__BYTE_ORDER=BYTE_ORDER -include getline.h -include endian.h -I$(CURDIR)/include -include fls.h

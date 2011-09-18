@@ -2,31 +2,27 @@
 
 choice
 	prompt "Binutils Version" if TOOLCHAINOPTS
-	default BINUTILS_VERSION_2_19_1
+	default BINUTILS_VERSION_2_19_1 if ubicom32
+	default BINUTILS_VERSION_2_20_1
 	help
 	  Select the version of binutils you wish to use.
-
-	config BINUTILS_VERSION_2_18
-		depends !ubicom32
-		bool "binutils 2.18"
 
 	config BINUTILS_VERSION_2_19_1
 		bool "binutils 2.19.1"
 
-	config BINUTILS_VERSION_2_20
-		depends !avr32
+	config BINUTILS_VERSION_2_20_1
 		depends !ubicom32
-		bool "binutils 2.20"
-        config BINUTILS_VERSION_2_20_1
-                depends !avr32
-                depends !ubicom32
-                bool "binutils 2.20.1"
+		bool "binutils 2.20.1"
 
-	config BINUTILS_VERSION_CS
-		depends !avr32
+	config BINUTILS_VERSION_2_21
 		depends !ubicom32
-		depends BROKEN
-		bool "binutils 2.19.1+20090205 with CodeSourcery enhancements"
+		depends !avr32 || (avr32 && BROKEN)
+		bool "binutils 2.21"
+
+	config BINUTILS_VERSION_2_21_1
+		depends !ubicom32
+		depends !avr32 || (avr32 && BROKEN)
+		bool "binutils 2.21.1"
 
 endchoice
 
@@ -40,9 +36,9 @@ config EXTRA_BINUTILS_CONFIG_OPTIONS
 config BINUTILS_VERSION
 	string
 	prompt "Binutils Version" if (TOOLCHAINOPTS && NULL)
-	default "2.18"            if BINUTILS_VERSION_2_18
 	default "2.19.1"          if BINUTILS_VERSION_2_19_1
-	default "2.20"            if BINUTILS_VERSION_2_20
 	default "2.20.1"          if BINUTILS_VERSION_2_20_1
-	default "2.19.1+cs"       if BINUTILS_VERSION_CS
-	default "2.19.1"
+	default "2.21"            if BINUTILS_VERSION_2_21
+	default "2.21.1"          if BINUTILS_VERSION_2_21_1
+	default "2.19.1"          if ubicom32
+	default "2.20.1"

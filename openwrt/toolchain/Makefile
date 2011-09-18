@@ -38,6 +38,8 @@ ifeq ($(CONFIG_EXTERNAL_TOOLCHAIN),)
   $(curdir)/gcc/minimal/compile:=$(curdir)/binutils/install
   $(curdir)/kernel-headers/install:=$(curdir)/gcc/minimal/install
   $(curdir)/gcc/initial/compile:=$(curdir)/$(LIBC)/prepare
+  $(curdir)/gcc/initial/prepare:=$(curdir)/gcc/minimal/prepare
+  $(curdir)/gcc/final/prepare:=$(curdir)/gcc/initial/prepare
   $(curdir)/$(LIBC)/compile:=$(curdir)/gcc/initial/install
   $(curdir)/gcc/final/compile:=$(curdir)/$(LIBC)/compile
   $(curdir)/$(LIBC)/install:=$(curdir)/gcc/final/install
@@ -55,7 +57,7 @@ ifndef DUMP_TARGET_DB
 ifneq ($(ARCH),)
   $(TOOLCHAIN_DIR)/info.mk: .config
 	@for dir in $(TOOLCHAIN_DIR); do ( \
-		set -x; \
+		$(if $(QUIET),,set -x;) \
 		mkdir -p "$$dir"; \
 		cd "$$dir"; \
 		mkdir -p stamp lib usr/include usr/lib ; \

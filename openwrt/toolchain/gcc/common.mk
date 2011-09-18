@@ -2,7 +2,7 @@
 # Copyright (C) 2002-2003 Erik Andersen <andersen@uclibc.org>
 # Copyright (C) 2004 Manuel Novoa III <mjn3@uclibc.org>
 # Copyright (C) 2005-2006 Felix Fietkau <nbd@openwrt.org>
-# Copyright (C) 2006-2010 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This program is free software; you can redistribute it and/or modify
 # it under the terms of the GNU General Public License as published by
@@ -36,48 +36,34 @@ ifdef CONFIG_GCC_VERSION_LLVM
   PKG_SOURCE_SUBDIR:=$(GCC_DIR)
   HOST_BUILD_DIR:=$(BUILD_DIR_TOOLCHAIN)/$(GCC_DIR)
 else
+ifeq ($(findstring linaro, $(CONFIG_GCC_VERSION)),linaro)
+    ifeq ($(CONFIG_GCC_VERSION),"4.5-linaro")
+      PKG_REV:=4.5-2011.08
+      PKG_VERSION:=4.5.4
+      PKG_VERSION_MAJOR:=4.5
+      PKG_MD5SUM:=c3374e210209e35ad1ea175223d3605c
+    endif
+    ifeq ($(CONFIG_GCC_VERSION),"4.6-linaro")
+      PKG_REV:=4.6-2011.08
+      PKG_VERSION:=4.6.2
+      PKG_VERSION_MAJOR:=4.6
+      PKG_MD5SUM:=7417cdb33d7b3a18552b2003a98cadfc
+    endif
+    PKG_SOURCE_URL:=http://launchpad.net/gcc-linaro/$(PKG_VERSION_MAJOR)/$(PKG_REV)/+download/
+    PKG_SOURCE:=$(PKG_NAME)-linaro-$(PKG_REV).tar.bz2
+    GCC_DIR:=gcc-linaro-$(PKG_REV)
+    HOST_BUILD_DIR:=$(BUILD_DIR_TOOLCHAIN)/$(GCC_DIR)
+else
   PKG_SOURCE_URL:=@GNU/gcc/gcc-$(PKG_VERSION)
   PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 
-  ifeq ($(PKG_VERSION),3.4.6)
-    PKG_MD5SUM:=4a21ac777d4b5617283ce488b808da7b
+  ifeq ($(PKG_VERSION),4.4.6)
+    PKG_MD5SUM:=ab525d429ee4425050a554bc9247d6c4
   endif
-  ifeq ($(PKG_VERSION),4.1.2)
-    PKG_MD5SUM:=a4a3eb15c96030906d8494959eeda23c
+  ifeq ($(PKG_VERSION),4.6.1)
+    PKG_MD5SUM:=c57a9170c677bf795bdc04ed796ca491
   endif
-  ifeq ($(PKG_VERSION),4.2.4)
-    PKG_MD5SUM:=d79f553e7916ea21c556329eacfeaa16
-  endif
-  ifeq ($(PKG_VERSION),4.3.3)
-    PKG_MD5SUM:=cc3c5565fdb9ab87a05ddb106ba0bd1f
-  endif
-  ifeq ($(PKG_VERSION),4.3.4)
-    PKG_MD5SUM:=60df63222dbffd53ca11492a2545044f
-  endif
-  ifeq ($(PKG_VERSION),4.3.5)
-    PKG_MD5SUM:=e588cfde3bf323f82918589b94f14a15
-  endif
-  ifeq ($(PKG_VERSION),4,4,1)
-    PKG_MD5SUM:=927eaac3d44b22f31f9c83df82f26436
-  endif
-  ifeq ($(PKG_VERSION),4.4.2)
-    PKG_MD5SUM:=70f5ac588a79e3c9901d5b34f58d896d
-  endif
-  ifeq ($(PKG_VERSION),4.4.3)
-    PKG_MD5SUM:=fe1ca818fc6d2caeffc9051fe67ff103
-  endif
-  ifeq ($(PKG_VERSION),4.4.4)
-    PKG_MD5SUM:=7ff5ce9e5f0b088ab48720bbd7203530
-  endif
-  ifeq ($(PKG_VERSION),4.4.5)
-    PKG_MD5SUM:=44b3192c4c584b9be5243d9e8e7e0ed1
-  endif
-  ifeq ($(PKG_VERSION),4.5.0)
-  PKG_MD5SUM:=ff27b7c4a5d5060c8a8543a44abca31f
-  endif
-  ifeq ($(PKG_VERSION),4.5.1)
-  PKG_MD5SUM:=48231a8e33ed6e058a341c53b819de1a
-  endif
+endif
 endif
 
 PATCH_DIR=../patches/$(GCC_VERSION)
@@ -100,9 +86,12 @@ HOST_STAMP_CONFIGURED:=$(GCC_BUILD_DIR)/.configured
 HOST_STAMP_INSTALLED:=$(STAGING_DIR_HOST)/stamp/.gcc_$(GCC_VARIANT)_installed
 
 SEP:=,
-TARGET_LANGUAGES:="c$(if $(CONFIG_INSTALL_LIBSTDCPP),$(SEP)c++)$(if $(CONFIG_INSTALL_LIBGCJ),$(SEP)java)"
+TARGET_LANGUAGES:="c$(if $(CONFIG_INSTALL_LIBSTDCPP),$(SEP)c++)$(if $(CONFIG_INSTALL_LIBGCJ),$(SEP)java)$(if $(CONFIG_INSTALL_GFORTRAN),$(SEP)fortran)"
 
 export libgcc_cv_fixed_point=no
+ifdef CONFIG_USE_UCLIBC
+  export glibcxx_cv_c99_math_tr1=no
+endif
 
 GCC_CONFIGURE:= \
 	SHELL="$(BASH)" \
@@ -123,29 +112,21 @@ GCC_CONFIGURE:= \
 		$(call qstrip,$(CONFIG_EXTRA_GCC_CONFIG_OPTIONS)) \
 		$(if $(CONFIG_mips64)$(CONFIG_mips64el),--with-arch=mips64 --with-abi=64) \
 		$(if $(CONFIG_GCC_VERSION_LLVM),--enable-llvm=$(BUILD_DIR_BASE)/host/llvm) \
-		$(if $(CONFIG_GCC_VERSION_4_3_3_CS)$(CONFIG_GCC_VERSION_4_4_1_CS)$(CONFIG_GCC_VERSION_4_4_3_CS),--enable-poison-system-directories)
 
-ifneq ($(CONFIG_GCC_VERSION_4_4)$(CONFIG_GCC_VERSION_4_5),)
-  ifneq ($(CONFIG_mips)$(CONFIG_mipsel),)
-    GCC_CONFIGURE += --with-mips-plt
-  endif
-endif
-
-ifneq ($(CONFIG_GCC_VERSION_4_3)$(CONFIG_GCC_VERSION_4_4)$(CONFIG_GCC_VERSION_4_5),)
+ifeq ($(CONFIG_GCC_LLVM),)
   GCC_BUILD_TARGET_LIBGCC:=y
   GCC_CONFIGURE+= \
 		--with-gmp=$(TOPDIR)/staging_dir/host \
 		--with-mpfr=$(TOPDIR)/staging_dir/host \
 		--disable-decimal-float
+  ifneq ($(CONFIG_mips)$(CONFIG_mipsel),)
+    GCC_CONFIGURE += --with-mips-plt
+  endif
 endif
 
-ifneq ($(CONFIG_GCC_VERSION_4_5),)
-  GCC_BUILD_TARGET_LIBGCC:=y
+ifneq ($(CONFIG_GCC_VERSION_4_5)$(CONFIG_GCC_VERSION_4_6),)
   GCC_CONFIGURE+= \
-                --with-gmp=$(TOPDIR)/staging_dir/host \
-                --with-mpc=$(TOPDIR)/staging_dir/host \
-                --with-mpfr=$(TOPDIR)/staging_dir/host \
-                --disable-decimal-float
+		--with-mpc=$(TOPDIR)/staging_dir/host
 endif
 
 ifneq ($(CONFIG_SSP_SUPPORT),)
@@ -162,6 +143,10 @@ ifneq ($(CONFIG_EXTRA_TARGET_ARCH),)
 		--enable-targets=$(call qstrip,$(CONFIG_EXTRA_TARGET_ARCH_NAME))-linux-$(TARGET_SUFFIX)
 endif
 
+ifdef CONFIG_sparc
+  GCC_CONFIGURE+= --enable-targets=all
+endif
+
 ifeq ($(LIBC),uClibc)
   GCC_CONFIGURE+= \
 		--disable-__cxa_atexit
@@ -172,6 +157,10 @@ endif
 
 ifdef CONFIG_powerpc
   TARGET_CFLAGS := $(patsubst -Os,-O2,$(TARGET_CFLAGS))
+endif
+
+ifneq ($(GCC_ARCH),)
+  GCC_CONFIGURE+= --with-arch=$(GCC_ARCH)
 endif
 
 GCC_MAKE:= \
