@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2010 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,16 +8,17 @@ include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=opkg
-PKG_REV:=563
+PKG_REV:=618
 PKG_VERSION:=$(PKG_REV)
-PKG_RELEASE:=3
+PKG_RELEASE:=1
 
 PKG_SOURCE_PROTO:=svn
 PKG_SOURCE_VERSION:=$(PKG_REV)
 PKG_SOURCE_SUBDIR:=opkg-$(PKG_VERSION)
 PKG_SOURCE_URL:=http://opkg.googlecode.com/svn/trunk/
 PKG_SOURCE:=$(PKG_SOURCE_SUBDIR).tar.gz
-PKG_FIXUP = libtool
+PKG_FIXUP:=autoreconf
+PKG_REMOVE_FILES = autogen.sh aclocal.m4
 
 include $(INCLUDE_DIR)/package.mk
 include $(INCLUDE_DIR)/host-build.mk
@@ -45,6 +46,7 @@ define Package/opkg/conffiles
 endef
 
 TARGET_CFLAGS += $(if $(CONFIG_GCC_VERSION_4_3)$(CONFIG_GCC_VERSION_4_4),-Wno-array-bounds)
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
 EXTRA_CFLAGS += $(TARGET_CPPFLAGS)
 
 CONFIGURE_ARGS += \
@@ -53,18 +55,12 @@ CONFIGURE_ARGS += \
 	--with-opkgetcdir=/etc \
 	--with-opkglockfile=/var/lock/opkg.lock
 
-define Build/Configure
-	(cd $(PKG_BUILD_DIR); \
-		autoreconf -v --install || exit 1 \
-	);
-	$(call Build/Configure/Default)
-endef
-
 define Build/Compile
 	$(MAKE) -C $(PKG_BUILD_DIR) \
 		CC="$(TARGET_CC)" \
 		DESTDIR="$(PKG_INSTALL_DIR)" \
 		HOST_CPU="$(PKGARCH)" \
+		LDFLAGS="-Wl,--gc-sections" \
 		all install
 endef
 
@@ -83,18 +79,11 @@ define Build/InstallDev
 endef
 
 
-HOST_BUILD_DEPENDS:=libtool/host
-
 HOST_CONFIGURE_ARGS+= \
 	--disable-curl \
 	--disable-gpg \
 	--with-opkgetcdir=/etc \
 	--with-opkglockfile=/tmp/opkg.lock
-
-define Host/Configure
-	(cd $(HOST_BUILD_DIR); autoreconf -v --install || exit 1)
-	$(call Host/Configure/Default)
-endef
 
 define Host/Compile
 	$(MAKE) -C $(HOST_BUILD_DIR) CC="$(HOSTCC)" all
