@@ -15,7 +15,7 @@ define KernelPackage/usb-core
   SUBMENU:=$(USB_MENU)
   TITLE:=Support for USB
   DEPENDS:=@USB_SUPPORT +kmod-nls-base
-  KCONFIG:=CONFIG_USB
+  KCONFIG:=CONFIG_USB CONFIG_XPS_USB_HCD_XILINX=n CONFIG_USB_FHCI_HCD=n
   FILES:=$(LINUX_DIR)/drivers/usb/core/usbcore.ko
   AUTOLOAD:=$(call AutoLoad,20,usbcore,1)
 endef
@@ -57,7 +57,7 @@ define KernelPackage/usb-eth-gadget
 	CONFIG_USB_ETH_EEM=y
   DEPENDS:=+kmod-usb-gadget
   FILES:=$(LINUX_DIR)/drivers/usb/gadget/g_ether.ko
-  AUTOLOAD:=$(call AutoLoad,52,usb-eth-gadget)
+  AUTOLOAD:=$(call AutoLoad,52,g_ether)
   $(call AddDepends/usb)
 endef
 
@@ -90,7 +90,8 @@ define KernelPackage/usb-ohci
   KCONFIG:= \
 	CONFIG_USB_OHCI \
 	CONFIG_USB_OHCI_HCD \
-	CONFIG_USB_OHCI_AR71XX=y
+	CONFIG_USB_OHCI_AR71XX=y \
+	CONFIG_USB_OCTEON_OHCI=y
   FILES:=$(LINUX_DIR)/drivers/usb/host/ohci-hcd.ko
   AUTOLOAD:=$(call AutoLoad,50,ohci-hcd,1)
   $(call AddDepends/usb)
@@ -107,14 +108,12 @@ define KernelPackage/musb-hdrc
   TITLE:=Support for Mentor Graphics silicon dual role USB
   KCONFIG:= \
 	CONFIG_USB_MUSB_HDRC \
-	CONFIG_NOP_USB_XCEIV \
-	CONFIG_USB_TUSB6010=y \
 	CONFIG_MUSB_PIO_ONLY=n \
 	CONFIG_USB_MUSB_OTG=y \
 	CONFIG_USB_MUSB_DEBUG=y
   DEPENDS:=@TARGET_omap24xx
-  FILES:=$(LINUX_DIR)/drivers/usb/otg/nop-usb-xceiv.ko $(LINUX_DIR)/drivers/usb/musb/musb_hdrc.ko
-  AUTOLOAD:=$(call AutoLoad,54,nop-usb-xceiv musb_hdrc)
+  FILES:=$(LINUX_DIR)/drivers/usb/musb/musb_hdrc.ko
+  AUTOLOAD:=$(call AutoLoad,46,musb_hdrc)
   $(call AddDepends/usb)
 endef
 
@@ -125,6 +124,38 @@ endef
 $(eval $(call KernelPackage,musb-hdrc))
 
 
+define KernelPackage/nop-usb-xceiv
+  TITLE:=Support for USB OTG NOP transceiver
+  KCONFIG:= \
+	CONFIG_NOP_USB_XCEIV
+  DEPENDS:=@TARGET_omap24xx
+  FILES:=$(LINUX_DIR)/drivers/usb/otg/nop-usb-xceiv.ko
+  AUTOLOAD:=$(call AutoLoad,45,nop-usb-xceiv)
+  $(call AddDepends/usb)
+endef
+
+define KernelPackage/nop-usb-xceiv/description
+  Support for USB OTG NOP transceiver
+endef
+
+$(eval $(call KernelPackage,nop-usb-xceiv))
+
+
+define KernelPackage/tusb6010
+  TITLE:=Support for TUSB 6010
+  KCONFIG:= \
+	CONFIG_USB_TUSB6010=y
+  DEPENDS:=+kmod-musb-hdrc +kmod-nop-usb-xceiv
+  $(call AddDepends/usb)
+endef
+
+define KernelPackage/tusb6010/description
+  TUSB6010 support
+endef
+
+$(eval $(call KernelPackage,tusb6010))
+
+
 define KernelPackage/usb-tahvo
   TITLE:=Support for Tahvo (Nokia n810) USB
   KCONFIG:= \
@@ -132,9 +163,9 @@ define KernelPackage/usb-tahvo
 	CONFIG_CBUS_TAHVO_USB_HOST_BY_DEFAULT=n \
 	CONFIG_USB_OHCI_HCD_OMAP1=y \
 	CONFIG_USB_GADGET_DEBUG_FS=n
-  DEPENDS:=@TARGET_omap24xx +kmod-usb-ohci +kmod-musb-hdrc +kmod-usb-gadget
+  DEPENDS:=@TARGET_omap24xx +kmod-tusb6010 +kmod-usb-gadget
   FILES:=$(LINUX_DIR)/drivers/cbus/tahvo-usb.ko
-  AUTOLOAD:=$(call AutoLoad,55,tahvo-usb)
+  AUTOLOAD:=$(call AutoLoad,45,tahvo-usb)
   $(call AddDepends/usb)
 endef
 
@@ -167,7 +198,9 @@ $(eval $(call KernelPackage,usb-isp116x-hcd))
 define KernelPackage/usb2
   TITLE:=Support for USB2 controllers
   KCONFIG:=CONFIG_USB_EHCI_HCD \
-    CONFIG_USB_EHCI_AR71XX=y
+    CONFIG_USB_EHCI_AR71XX=y \
+    CONFIG_USB_OCTEON_EHCI=y \
+    CONFIG_USB_EHCI_FSL=n
   FILES:=$(LINUX_DIR)/drivers/usb/host/ehci-hcd.ko
   AUTOLOAD:=$(call AutoLoad,40,ehci-hcd,1)
   $(call AddDepends/usb)
@@ -297,7 +330,7 @@ define KernelPackage/usb-serial-ch341
   $(call AddDepends/usb-serial)
 endef
 
-define KernelPackage/usb-serial-belkin/description
+define KernelPackage/usb-serial-ch341/description
  Kernel support for Winchiphead CH341 USB-to-Serial converters
 endef
 
@@ -322,7 +355,7 @@ $(eval $(call KernelPackage,usb-serial-ftdi))
 define KernelPackage/usb-serial-ipw
   TITLE:=Support for IPWireless 3G devices
   KCONFIG:=CONFIG_USB_SERIAL_IPW
-  FILES:=$(LINUX_DIR)/drivers/usb/serial/ipw.$(LINUX_KMOD_SUFFIX)
+  FILES:=$(LINUX_DIR)/drivers/usb/serial/ipw.ko
   AUTOLOAD:=$(call AutoLoad,65,ipw)
   $(call AddDepends/usb-serial)
 endef
@@ -343,6 +376,21 @@ define KernelPackage/usb-serial-mct/description
 endef
 
 $(eval $(call KernelPackage,usb-serial-mct))
+
+
+define KernelPackage/usb-serial-mos7720
+  TITLE:=Support for Moschip MOS7720 devices
+  KCONFIG:=CONFIG_USB_SERIAL_MOS7720
+  FILES:=$(LINUX_DIR)/drivers/usb/serial/mos7720.ko
+  AUTOLOAD:=$(call AutoLoad,65,mos7720)
+  $(call AddDepends/usb-serial)
+endef
+
+define KernelPackage/usb-serial-mos7720/description
+ Kernel support for Moschip MOS7720 USB-to-Serial converters
+endef
+
+$(eval $(call KernelPackage,usb-serial-mos7720))
 
 
 define KernelPackage/usb-serial-pl2303
@@ -496,8 +544,25 @@ endef
 $(eval $(call KernelPackage,usb-serial-keyspan))
 
 
+define KernelPackage/usb-serial-wwan
+  TITLE:=Support for GSM and CDMA modems
+  DEPENDS:= @!LINUX_2_6_30&&!LINUX_3_6_31&&!LINUX_2_6_32
+  KCONFIG:=CONFIG_USB_SERIAL_WWAN
+  FILES:=$(LINUX_DIR)/drivers/usb/serial/usb_wwan.ko
+  AUTOLOAD:=$(call AutoLoad,61,usb_wwan)
+  $(call AddDepends/usb-serial)
+endef
+
+define KernelPackage/usb-serial-wwan/description
+ Kernel support for USB GSM and CDMA modems
+endef
+
+$(eval $(call KernelPackage,usb-serial-wwan))
+
+
 define KernelPackage/usb-serial-option
   TITLE:=Support for Option HSDPA modems
+  DEPENDS:=+!LINUX_2_6_30&&!LINUX_2_6_31&&!LINUX_2_6_32:kmod-usb-serial-wwan
   KCONFIG:=CONFIG_USB_SERIAL_OPTION
   FILES:=$(LINUX_DIR)/drivers/usb/serial/option.ko
   AUTOLOAD:=$(call AutoLoad,65,option)
@@ -650,7 +715,7 @@ $(eval $(call KernelPackage,usb-atm-cxacru))
 
 define KernelPackage/usb-net
   TITLE:=Kernel modules for USB-to-Ethernet convertors
-  KCONFIG:=CONFIG_USB_USBNET
+  KCONFIG:=CONFIG_USB_USBNET CONFIG_MII=y
   AUTOLOAD:=$(call AutoLoad,60,usbnet)
   FILES:=$(LINUX_DIR)/drivers/$(USBNET_DIR)/usbnet.ko
   $(call AddDepends/usb)
@@ -789,6 +854,20 @@ endef
 
 $(eval $(call KernelPackage,usb-net-rndis))
 
+define KernelPackage/usb-net-sierrawireless
+  TITLE:=Support for Sierra Wireless devices
+  KCONFIG:=CONFIG_USB_SIERRA_NET
+  FILES:=$(LINUX_DIR)/drivers/net/usb/sierra_net.ko
+  AUTOLOAD:=$(call AutoLoad,65,sierra_net)
+  $(call AddDepends/usb-net)
+endef
+
+define KernelPackage/usb-net-sierrawireless/description
+ Kernel support for Sierra Wireless devices
+endef
+
+$(eval $(call KernelPackage,usb-net-sierrawireless))
+
 
 define KernelPackage/usb-hid
   TITLE:=Support for USB Human Input Devices
@@ -868,3 +947,22 @@ endef
 
 $(eval $(call KernelPackage,usb-phidget))
 
+define KernelPackage/usb-rt305x-dwc_otg
+  TITLE:=RT305X USB controller driver
+  DEPENDS:=@TARGET_ramips_rt305x
+  KCONFIG:= \
+	CONFIG_DWC_OTG \
+	CONFIG_DWC_OTG_HOST_ONLY=y \
+	CONFIG_DWC_OTG_DEVICE_ONLY=n \
+	CONFIG_DWC_OTG_DEBUG=n
+  FILES:=$(LINUX_DIR)/drivers/usb/dwc_otg/dwc_otg.ko
+  AUTOLOAD:=$(call AutoLoad,54,dwc_otg,1)
+  $(call AddDepends/usb)
+endef
+
+define KernelPackage/usb-rt305x-dwc_otg/description
+  This driver provides USB Device Controller support for the
+  Synopsys DesignWare USB OTG Core used in the Ralink RT305X SoCs.
+endef
+
+$(eval $(call KernelPackage,usb-rt305x-dwc_otg))

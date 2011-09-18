@@ -18,24 +18,19 @@ define KernelPackage/video-core
 	CONFIG_VIDEO_V4L1=y \
 	CONFIG_VIDEO_ALLOW_V4L1=y \
 	CONFIG_VIDEO_CAPTURE_DRIVERS=y \
-	CONFIG_V4L_USB_DRIVERS=y 
-endef
-
-define KernelPackage/video-core/2.4
-  FILES:=$(LINUX_DIR)/drivers/media/video/videodev.ko
-  AUTOLOAD:=$(call AutoLoad,60,videodev)
-endef
-
-define KernelPackage/video-core/2.6
+	CONFIG_V4L_USB_DRIVERS=y
+ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.38)),1)
+  FILES:= \
+	$(LINUX_DIR)/drivers/media/video/v4l2-common.ko \
+	$(LINUX_DIR)/drivers/media/video/videodev.ko
+  AUTOLOAD:=$(call AutoLoad,60, videodev v4l2-common)
+else
   FILES:= \
 	$(LINUX_DIR)/drivers/media/video/v4l2-common.ko \
 	$(LINUX_DIR)/drivers/media/video/v4l1-compat.ko \
 	$(LINUX_DIR)/drivers/media/video/videodev.ko
-  AUTOLOAD:=$(call AutoLoad,60, \
-	v4l1-compat \
-	videodev \
-	v4l2-common \
-  )
+  AUTOLOAD:=$(call AutoLoad,60, v4l1-compat videodev v4l2-common)
+endif
 endef
 
 define KernelPackage/video-core/description
@@ -87,7 +82,7 @@ $(eval $(call KernelPackage,video-konica))
 define KernelPackage/video-ov511
   TITLE:=OV511 USB webcam support
   DEPENDS:=@USB_SUPPORT +kmod-usb-core
-  KCONFIG:=CONFIG_VIDEO_OV511
+  KCONFIG:=CONFIG_USB_OV511
   FILES:=$(LINUX_DIR)/drivers/media/video/ov511.ko
   AUTOLOAD:=$(call AutoLoad,70,ov511)
   $(call AddDepends/video)

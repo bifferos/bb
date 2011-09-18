@@ -1,11 +1,78 @@
 #
-# Copyright (C) 2006-2008 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
 #
 
 NETWORK_DEVICES_MENU:=Network Devices
+
+define KernelPackage/sis190
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=SiS 190 Fast/Gigabit Ethernet support
+  DEPENDS:=@TARGET_x86
+  KCONFIG:=CONFIG_SIS190
+  FILES:=$(LINUX_DIR)/drivers/net/sis190.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,sis190)
+endef
+ 
+$(eval $(call KernelPackage,sis190))
+
+define KernelPackage/skge
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=SysKonnect Yukon support
+  DEPENDS:=@TARGET_x86
+  KCONFIG:=CONFIG_SKGE \
+    CONFIG_SKGE_DEBUG=n
+  FILES:=$(LINUX_DIR)/drivers/net/skge.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,skge)
+endef
+
+$(eval $(call KernelPackage,skge))
+
+define KernelPackage/atl2
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Atheros L2 Fast Ethernet support
+  DEPENDS:=@PCI_SUPPORT
+  KCONFIG:=CONFIG_ATL2
+  FILES:=$(LINUX_DIR)/drivers/net/atlx/atl2.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,atl2)
+endef
+
+$(eval $(call KernelPackage,atl2))
+
+define KernelPackage/atl1
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Atheros L1 Gigabit Ethernet support
+  DEPENDS:=@PCI_SUPPORT
+  KCONFIG:=CONFIG_ATL1
+  FILES:=$(LINUX_DIR)/drivers/net/atlx/atl1.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,atl1)
+endef
+
+$(eval $(call KernelPackage,atl1))
+
+define KernelPackage/atl1c
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Atheros L1C
+  DEPENDS:=@PCI_SUPPORT
+  KCONFIG:=CONFIG_ATL1C
+  FILES:=$(LINUX_DIR)/drivers/net/atl1c/atl1c.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,atl1c)
+endef
+
+$(eval $(call KernelPackage,atl1c))
+
+define KernelPackage/atl1e
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Atheros L1E
+  DEPENDS:=@PCI_SUPPORT
+  KCONFIG:=CONFIG_ATL1E
+  FILES:=$(LINUX_DIR)/drivers/net/atl1e/atl1e.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,50,atl1e)
+endef
+
+$(eval $(call KernelPackage,atl1e))
 
 define KernelPackage/libphy
   SUBMENU:=$(NETWORK_DEVICES_MENU)
@@ -39,7 +106,7 @@ $(eval $(call KernelPackage,swconfig))
 define KernelPackage/mvswitch
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=Marvell 88E6060 switch support
-  DEPENDS:=+kmod-swconfig
+  DEPENDS:=+kmod-swconfig @!LINUX_3_1||BROKEN
   KCONFIG:=CONFIG_MVSWITCH_PHY
   FILES:=$(LINUX_DIR)/drivers/net/phy/mvswitch.ko
   AUTOLOAD:=$(call AutoLoad,41,mvswitch)
@@ -158,7 +225,7 @@ $(eval $(call KernelPackage,via-rhine))
 define KernelPackage/via-velocity
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=VIA Velocity Gigabit Ethernet Adapter kernel support
-  DEPENDS:=@TARGET_ixp4xx||TARGET_mpc83xx||TARGET_x86
+  DEPENDS:=@TARGET_ixp4xx||TARGET_mpc83xx||TARGET_x86 +kmod-crc-ccitt
   KCONFIG:=CONFIG_VIA_VELOCITY
   FILES:=$(LINUX_DIR)/drivers/net/via-velocity.ko
   AUTOLOAD:=$(call AutoLoad,50,via-velocity)
@@ -224,7 +291,7 @@ $(eval $(call KernelPackage,8139cp))
 define KernelPackage/r8169
   SUBMENU:=$(NETWORK_DEVICES_MENU)
   TITLE:=RealTek RTL-8169 PCI Gigabit Ethernet Adapter kernel support
-  DEPENDS:=@TARGET_x86
+  DEPENDS:=@PCI_SUPPORT
   KCONFIG:=CONFIG_R8169 \
     CONFIG_R8169_NAPI=y \
     CONFIG_R8169_VLAN=n
@@ -268,6 +335,13 @@ endef
 
 define KernelPackage/e100/description
  Kernel modules for Intel(R) PRO/100+ Ethernet adapters.
+endef
+
+define KernelPackage/e100/install
+	$(INSTALL_DIR) $(1)/lib/firmware/e100
+	$(foreach file,d101m_ucode.bin d101s_ucode.bin d102e_ucode.bin, \
+		$(TARGET_CROSS)objcopy -Iihex -Obinary $(LINUX_DIR)/firmware/e100/$(file).ihex $(1)/lib/firmware/e100/$(file); \
+	)
 endef
 
 $(eval $(call KernelPackage,e100))
@@ -390,8 +464,26 @@ endef
 
 $(eval $(call KernelPackage,ssb-gige))
 
+
+define KernelPackage/hfcpci
+  TITLE:=HFC PCI cards (single port) support for mISDN
+  KCONFIG:=CONFIG_MISDN_HFCPCI
+  DEPENDS:=+kmod-misdn
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  FILES:=$(LINUX_DIR)/drivers/isdn/hardware/mISDN/hfcpci.ko
+  AUTOLOAD:=$(call AutoLoad,31,hfcpci)
+endef
+
+define KernelPackage/hfcpci/description
+ Kernel modules for Cologne AG's HFC pci cards (single port)
+ using the mISDN V2 stack.
+endef
+
+$(eval $(call KernelPackage,hfcpci))
+
+
 define KernelPackage/hfcmulti
-  TITLE:=HFC multiport cards (HFC-4S/8S/E1)
+  TITLE:=HFC multiport cards (HFC-4S/8S/E1) support for mISDN
   KCONFIG:=CONFIG_MISDN_HFCMULTI
   DEPENDS:=+kmod-misdn
   SUBMENU:=$(NETWORK_DEVICES_MENU)
@@ -400,7 +492,8 @@ define KernelPackage/hfcmulti
 endef
 
 define KernelPackage/hfcmulti/description
-  HFC multiport cards (HFC-4S/8S/E1) support
+ Kernel modules for Cologne AG's HFC multiport cards (HFC-4S/8S/E1)
+ using the mISDN V2 stack.
 endef
 
 $(eval $(call KernelPackage,hfcmulti))
@@ -408,7 +501,7 @@ $(eval $(call KernelPackage,hfcmulti))
 
 define KernelPackage/gigaset
   SUBMENU:=$(NETWORK_DEVICES_MENU)
-  TITLE:=Siemens Gigaset support (isdn)
+  TITLE:=Siemens Gigaset support for isdn4linux
   DEPENDS:=@USB_SUPPORT +kmod-isdn4linux +kmod-crc-ccitt +kmod-usb-core
   URL:=http://gigaset307x.sourceforge.net/
   KCONFIG:= \
@@ -501,3 +594,49 @@ define KernelPackage/solos-pci/description
 endef
 
 $(eval $(call KernelPackage,solos-pci))
+
+define KernelPackage/dummy
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Dummy network device
+  KCONFIG:=CONFIG_DUMMY
+  FILES:=$(LINUX_DIR)/drivers/net/dummy.ko
+  AUTOLOAD:=$(call AutoLoad,34,dummy)
+endef
+
+define KernelPackage/dummy/description
+  The dummy network device
+endef
+
+$(eval $(call KernelPackage,dummy))
+
+define KernelPackage/ifb
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Intermediate Functional Block support
+  KCONFIG:= \
+	CONFIG_IFB \
+	CONFIG_NET_CLS=y
+  FILES:=$(LINUX_DIR)/drivers/net/ifb.ko
+  AUTOLOAD:=$(call AutoLoad,34,ifb)
+endef
+
+define KernelPackage/ifb/description
+  The Intermediate Functional Block
+endef
+
+$(eval $(call KernelPackage,ifb))
+
+define KernelPackage/dm9000
+  SUBMENU:=$(NETWORK_DEVICES_MENU)
+  TITLE:=Davicom 9000 Ethernet support
+  KCONFIG:=CONFIG_DM9000 \
+    CONFIG_DM9000_DEBUGLEVEL=4 \
+    CONFIG_DM9000_FORCE_SIMPLE_PHY_POLL=y
+  FILES:=$(LINUX_DIR)/drivers/net/dm9000.ko
+  AUTOLOAD:=$(call AutoLoad,34,dm9000)
+endef
+
+define KernelPackage/dm9000/description
+ Kernel driver for Davicom 9000 Ethernet adapters.
+endef
+
+$(eval $(call KernelPackage,dm9000))

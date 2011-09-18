@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2010 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -32,20 +32,26 @@ define KernelPackage/bluetooth
 	CONFIG_BT_HCIUSB \
 	CONFIG_BT_HCIUART \
 	CONFIG_BT_HCIUART_H4 \
-	CONFIG_BT_HIDP
+	CONFIG_BT_HIDP \
+	CONFIG_HID_SUPPORT=y
   $(call AddDepends/crc16)
   $(call AddDepends/hid)
   $(call AddDepends/rfkill)
   FILES:= \
 	$(LINUX_DIR)/net/bluetooth/bluetooth.ko \
-	$(LINUX_DIR)/net/bluetooth/l2cap.ko \
-	$(LINUX_DIR)/net/bluetooth/sco.ko \
 	$(LINUX_DIR)/net/bluetooth/rfcomm/rfcomm.ko \
 	$(LINUX_DIR)/net/bluetooth/bnep/bnep.ko \
 	$(LINUX_DIR)/net/bluetooth/hidp/hidp.ko \
 	$(LINUX_DIR)/drivers/bluetooth/hci_uart.ko \
 	$(LINUX_DIR)/drivers/bluetooth/btusb.ko
-  AUTOLOAD:=$(call AutoLoad,90,bluetooth l2cap sco rfcomm bnep hidp hci_uart btusb)
+  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.39)),1)
+    AUTOLOAD:=$(call AutoLoad,90,bluetooth rfcomm bnep hidp hci_uart btusb)
+  else
+    FILES+= \
+	$(LINUX_DIR)/net/bluetooth/l2cap.ko \
+	$(LINUX_DIR)/net/bluetooth/sco.ko
+    AUTOLOAD:=$(call AutoLoad,90,bluetooth l2cap sco rfcomm bnep hidp hci_uart btusb)
+  endif
 endef
 
 define KernelPackage/bluetooth/description
@@ -55,12 +61,28 @@ endef
 $(eval $(call KernelPackage,bluetooth))
 
 
+define KernelPackage/bluetooth-hci-h4p
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=HCI driver with H4 Nokia extensions
+  DEPENDS:=@TARGET_omap24xx +kmod-bluetooth
+  KCONFIG:=CONFIG_BT_HCIH4P
+  FILES:=$(LINUX_DIR)/drivers/bluetooth/hci_h4p/hci_h4p.ko
+  AUTOLOAD:=$(call AutoLoad,91,hci_h4p)
+endef
+
+define KernelPackage/bluetooth-hci-h4p/description
+  HCI driver with H4 Nokia extensions
+endef
+
+$(eval $(call KernelPackage,bluetooth-hci-h4p))
+
+
 define KernelPackage/cpu-msr
   SUBMENU:=$(OTHER_MENU)
   TITLE:=x86 CPU MSR support
   DEPENDS:=@TARGET_x86
   KCONFIG:=CONFIG_X86_MSR
-  FILES:=$(LINUX_DIR)/arch/x86/kernel/msr.$(LINUX_KMOD_SUFFIX)
+  FILES:=$(LINUX_DIR)/arch/x86/kernel/msr.ko
   AUTOLOAD:=$(call AutoLoad,20,msr)
 endef
 
@@ -69,83 +91,6 @@ define KernelPackage/cpu-msr/description
 endef
 
 $(eval $(call KernelPackage,cpu-msr))
-
-
-define KernelPackage/crc-ccitt
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=CRC-CCITT support
-  KCONFIG:=CONFIG_CRC_CCITT
-  FILES:=$(LINUX_DIR)/lib/crc-ccitt.ko
-  AUTOLOAD:=$(call AutoLoad,20,crc-ccitt)
-endef
-
-define KernelPackage/crc-ccitt/description
- Kernel module for CRC-CCITT support
-endef
-
-$(eval $(call KernelPackage,crc-ccitt))
-
-
-define KernelPackage/crc-itu-t
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=CRC ITU-T V.41 support
-  KCONFIG:=CONFIG_CRC_ITU_T
-  FILES:=$(LINUX_DIR)/lib/crc-itu-t.ko
-  AUTOLOAD:=$(call AutoLoad,20,crc-itu-t)
-endef
-
-define KernelPackage/crc-itu-t/description
- Kernel module for CRC ITU-T V.41 support
-endef
-
-$(eval $(call KernelPackage,crc-itu-t))
-
-
-define KernelPackage/crc7
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=CRC7 support
-  KCONFIG:=CONFIG_CRC7
-  FILES:=$(LINUX_DIR)/lib/crc7.ko
-  AUTOLOAD:=$(call AutoLoad,20,crc7)
-endef
-
-define KernelPackage/crc7/description
- Kernel module for CRC7 support
-endef
-
-$(eval $(call KernelPackage,crc7))
-
-
-define KernelPackage/crc16
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=CRC16 support
-  KCONFIG:=CONFIG_CRC16
-  FILES:=$(LINUX_DIR)/lib/crc16.ko
-  AUTOLOAD:=$(call AutoLoad,20,crc16,1)
-  $(call SetDepends/crc16)
-endef
-
-define KernelPackage/crc16/description
- Kernel module for CRC16 support
-endef
-
-$(eval $(call KernelPackage,crc16))
-
-
-define KernelPackage/libcrc32c
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=CRC32 library support
-  KCONFIG:=CONFIG_LIBCRC32C
-  DEPENDS:=+kmod-crypto-core +kmod-crypto-misc 
-  FILES:=$(LINUX_DIR)/lib/libcrc32c.ko
-  AUTOLOAD:=$(call AutoLoad,20,crc32c libcrc32c,1)
-endef
-
-define KernelPackage/libcrc32c/description
- Kernel module for CRC32 support
-endef
-
-$(eval $(call KernelPackage,libcrc32c))
 
 
 define KernelPackage/eeprom-93cx6
@@ -163,10 +108,41 @@ endef
 $(eval $(call KernelPackage,eeprom-93cx6))
 
 
+define KernelPackage/eeprom-at24
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=EEPROM AT24 support
+  KCONFIG:=CONFIG_EEPROM_AT24
+  DEPENDS:=+kmod-i2c-core
+  FILES:=$(LINUX_DIR)/drivers/misc/eeprom/at24.ko
+  AUTOLOAD:=$(call AutoLoad,60,at24)
+endef
+
+define KernelPackage/eeprom-at24/description
+ Kernel module for most I2C EEPROMs
+endef
+
+$(eval $(call KernelPackage,eeprom-at24))
+
+
+define KernelPackage/eeprom-at25
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=EEPROM AT25 support
+  KCONFIG:=CONFIG_EEPROM_AT25
+  FILES:=$(LINUX_DIR)/drivers/misc/eeprom/at25.ko
+  AUTOLOAD:=$(call AutoLoad,61,at25)
+endef
+
+define KernelPackage/eeprom-at25/description
+ Kernel module for most SPI EEPROMs
+endef
+
+$(eval $(call KernelPackage,eeprom-at25))
+
+
 define KernelPackage/gpio-cs5535
   SUBMENU:=$(OTHER_MENU)
   TITLE:=AMD CS5535/CS5536 GPIO driver
-  DEPENDS:=@TARGET_x86
+  DEPENDS:=@TARGET_x86 @LINUX_2_6_30||LINUX_2_6_31||LINUX_2_6_32||LINUX_2_6_35||LINUX_2_6_36||LINUX_2_6_37
   KCONFIG:=CONFIG_CS5535_GPIO
   FILES:=$(LINUX_DIR)/drivers/char/cs5535_gpio.ko
   AUTOLOAD:=$(call AutoLoad,50,cs5535_gpio)
@@ -177,6 +153,22 @@ define KernelPackage/gpio-cs5535/description
 endef
 
 $(eval $(call KernelPackage,gpio-cs5535))
+
+
+define KernelPackage/gpio-cs5535-new
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=AMD CS5535/CS5536 GPIO driver with improved sysfs support
+  DEPENDS:=@TARGET_x86 +kmod-cs5535-mfd @!(LINUX_2_6_30||LINUX_2_6_31||LINUX_2_6_32)
+  KCONFIG:=CONFIG_GPIO_CS5535
+  FILES:=$(LINUX_DIR)/drivers/gpio/cs5535-gpio.ko
+  AUTOLOAD:=$(call AutoLoad,50,cs5535-gpio)
+endef
+
+define KernelPackage/gpio-cs5535-new/description
+ This package contains the new AMD CS5535/CS5536 GPIO driver
+endef
+
+$(eval $(call KernelPackage,gpio-cs5535-new))
 
 
 define KernelPackage/gpio-dev
@@ -260,12 +252,11 @@ $(eval $(call KernelPackage,gpio-nxp-74hc164))
 define KernelPackage/hid
   SUBMENU:=$(OTHER_MENU)
   TITLE:=HID Devices
-  DEPENDS:=+kmod-input-evdev
   KCONFIG:=CONFIG_HID
   FILES:=$(LINUX_DIR)/drivers/hid/hid.ko
   AUTOLOAD:=$(call AutoLoad,61,hid)
   $(call SetDepends/hid)
-  $(call AddDepends/input)
+  $(call AddDepends/input,+kmod-input-evdev)
 endef
 
 define KernelPackage/hid/description
@@ -329,7 +320,9 @@ define KernelPackage/input-gpio-keys
   SUBMENU:=$(OTHER_MENU)
   TITLE:=GPIO key support
   DEPENDS:= @GPIO_SUPPORT
-  KCONFIG:=CONFIG_KEYBOARD_GPIO
+  KCONFIG:= \
+	CONFIG_KEYBOARD_GPIO \
+	CONFIG_INPUT_KEYBOARD=y
   FILES:=$(LINUX_DIR)/drivers/input/keyboard/gpio_keys.ko
   AUTOLOAD:=$(call AutoLoad,60,gpio_keys)
   $(call AddDepends/input)
@@ -341,6 +334,25 @@ define KernelPackage/input-gpio-keys/description
 endef
 
 $(eval $(call KernelPackage,input-gpio-keys))
+
+
+define KernelPackage/input-gpio-keys-polled
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Polled GPIO key support
+  DEPENDS:=@GPIO_SUPPORT @!(LINUX_2_6_30||LINUX_2_6_31||LINUX_2_6_32||LINUX_2_6_34||LINUX_2_6_35||LINUX_2_6_36) +kmod-input-polldev
+  KCONFIG:= \
+	CONFIG_KEYBOARD_GPIO_POLLED \
+	CONFIG_INPUT_KEYBOARD=y
+  FILES:=$(LINUX_DIR)/drivers/input/keyboard/gpio_keys_polled.ko
+  AUTOLOAD:=$(call AutoLoad,62,gpio_keys_polled)
+  $(call AddDepends/input)
+endef
+
+define KernelPackage/input-gpio-keys-polled/description
+ Kernel module for support polled GPIO keys input device
+endef
+
+$(eval $(call KernelPackage,input-gpio-keys-polled))
 
 
 define KernelPackage/input-gpio-encoder
@@ -389,132 +401,6 @@ define KernelPackage/input-polldev/description
 endef
 
 $(eval $(call KernelPackage,input-polldev))
-
-
-define KernelPackage/leds-alix
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=PCengines ALIX LED support
-  DEPENDS:=@TARGET_x86
-  KCONFIG:=CONFIG_LEDS_ALIX2
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-alix2.ko
-  AUTOLOAD:=$(call AutoLoad,50,leds-alix2)
-endef
-
-define KernelPackage/leds-alix/description
- Kernel module for PCengines ALIX LEDs
-endef
-
-$(eval $(call KernelPackage,leds-alix))
-
-
-define KernelPackage/leds-gpio
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=GPIO LED support
-  DEPENDS:= @GPIO_SUPPORT
-  KCONFIG:=CONFIG_LEDS_GPIO
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-gpio.ko
-  AUTOLOAD:=$(call AutoLoad,60,leds-gpio)
-endef
-
-define KernelPackage/leds-gpio/description
- Kernel module for LEDs on GPIO lines
-endef
-
-$(eval $(call KernelPackage,leds-gpio))
-
-
-define KernelPackage/leds-net48xx
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=Soekris Net48xx LED support
-  DEPENDS:=@TARGET_x86 +kmod-gpio-scx200
-  KCONFIG:=CONFIG_LEDS_NET48XX
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-net48xx.ko
-  AUTOLOAD:=$(call AutoLoad,50,leds-net48xx)
-endef
-
-define KernelPackage/leds-net48xx/description
- Kernel module for Soekris Net48xx LEDs
-endef
-
-$(eval $(call KernelPackage,leds-net48xx))
-
-
-define KernelPackage/leds-rb750
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=RouterBOARD 750 LED support
-  DEPENDS:=@TARGET_ar71xx
-  KCONFIG:=CONFIG_LEDS_RB750
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-rb750.ko
-  AUTOLOAD:=$(call AutoLoad,60,leds-rb750)
-endef
-
-define KernelPackage/leds-rb750/description
- Kernel module for the LEDs on the MikroTik RouterBOARD 750.
-endef
-
-$(eval $(call KernelPackage,leds-rb750))
-
-
-define KernelPackage/leds-wndr3700-usb
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=WNDR3700 USB LED support
-  DEPENDS:=@TARGET_ar71xx
-  KCONFIG:=CONFIG_LEDS_WNDR3700_USB
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-wndr3700-usb.ko
-  AUTOLOAD:=$(call AutoLoad,60,leds-wndr3700-usb)
-endef
-
-define KernelPackage/leds-wndr3700-usb/description
- Kernel module for the USB LED on the NETGWR WNDR3700 board.
-endef
-
-$(eval $(call KernelPackage,leds-wndr3700-usb))
-
-
-define KernelPackage/leds-wrap
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=PCengines WRAP LED support
-  DEPENDS:=@TARGET_x86 +kmod-gpio-scx200
-  KCONFIG:=CONFIG_LEDS_WRAP
-  FILES:=$(LINUX_DIR)/drivers/leds/leds-wrap.ko
-  AUTOLOAD:=$(call AutoLoad,50,leds-wrap)
-endef
-
-define KernelPackage/leds-wrap/description
- Kernel module for PCengines WRAP LEDs
-endef
-
-$(eval $(call KernelPackage,leds-wrap))
-
-
-define KernelPackage/ledtrig-morse
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=LED Morse Trigger
-  KCONFIG:=CONFIG_LEDS_TRIGGER_MORSE
-  FILES:=$(LINUX_DIR)/drivers/leds/ledtrig-morse.ko
-  AUTOLOAD:=$(call AutoLoad,50,ledtrig-morse)
-endef
-
-define KernelPackage/ledtrig-morse/description
- Kernel module to show morse coded messages on LEDs.
-endef
-
-$(eval $(call KernelPackage,ledtrig-morse))
-
-
-define KernelPackage/ledtrig-netdev
-  SUBMENU:=$(OTHER_MENU)
-  TITLE:=LED NETDEV Trigger
-  KCONFIG:=CONFIG_LEDS_TRIGGER_NETDEV
-  FILES:=$(LINUX_DIR)/drivers/leds/ledtrig-netdev.ko
-  AUTOLOAD:=$(call AutoLoad,50,ledtrig-netdev)
-endef
-
-define KernelPackage/ledtrig-netdev/description
- Kernel module to drive LEDs based on network activity.
-endef
-
-$(eval $(call KernelPackage,ledtrig-netdev))
 
 
 define KernelPackage/lp
@@ -575,6 +461,21 @@ define KernelPackage/mmc-atmelmci/description
 endef
 
 $(eval $(call KernelPackage,mmc-atmelmci,1))
+
+
+define KernelPackage/oprofile
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=OProfile profiling support
+  KCONFIG:=CONFIG_OPROFILE
+  FILES:=$(LINUX_DIR)/arch/$(LINUX_KARCH)/oprofile/oprofile.ko
+  DEPENDS:=@KERNEL_PROFILING
+endef
+
+define KernelPackage/oprofile/description
+  Kernel module for support for oprofile system profiling.
+endef
+
+$(eval $(call KernelPackage,oprofile))
 
 
 define KernelPackage/rfkill
@@ -646,28 +547,33 @@ endef
 $(eval $(call KernelPackage,ssb))
 
 
-define KernelPackage/textsearch
-SUBMENU:=$(OTHER_MENU)
-  TITLE:=Textsearch support is selected if needed
-  KCONFIG:= \
-    CONFIG_TEXTSEARCH=y \
-    CONFIG_TEXTSEARCH_KMP \
-    CONFIG_TEXTSEARCH_BM \
-    CONFIG_TEXTSEARCH_FSM
-  FILES:= \
-    $(LINUX_DIR)/lib/ts_kmp.ko \
-    $(LINUX_DIR)/lib/ts_bm.ko \
-    $(LINUX_DIR)/lib/ts_fsm.ko
-  AUTOLOAD:=$(call AutoLoad,20,ts_kmp ts_bm ts_fsm)
+define KernelPackage/bcma
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=BCMA support
+  DEPENDS:=@PCI_SUPPORT @!TARGET_brcm47xx
+  KCONFIG:=\
+	CONFIG_BCMA \
+	CONFIG_BCMA_POSSIBLE=y \
+	CONFIG_BCMA_BLOCKIO=y \
+	CONFIG_BCMA_HOST_PCI_POSSIBLE=y \
+	CONFIG_BCMA_HOST_PCI=y \
+	CONFIG_BCMA_DRIVER_PCI_HOSTMODE=n \
+	CONFIG_BCMA_DEBUG=n
+  FILES:=$(LINUX_DIR)/drivers/bcma/bcma.ko
+  AUTOLOAD:=$(call AutoLoad,29,bcma)
 endef
 
-$(eval $(call KernelPackage,textsearch))
+define KernelPackage/bcma/description
+   Bus driver for Broadcom specific Advanced Microcontroller Bus Architecture.
+endef
+
+$(eval $(call KernelPackage,bcma))
 
 
 define KernelPackage/wdt-geode
   SUBMENU:=$(OTHER_MENU)
   TITLE:=Geode/LX Watchdog timer
-  DEPENDS:=@TARGET_x86
+  DEPENDS:=@TARGET_x86 +kmod-cs5535-mfgpt
   KCONFIG:=CONFIG_GEODE_WDT
   FILES:=$(LINUX_DIR)/drivers/$(WATCHDOG_DIR)/geodewdt.ko
   AUTOLOAD:=$(call AutoLoad,50,geodewdt)
@@ -678,6 +584,88 @@ define KernelPackage/wdt-geode/description
 endef
 
 $(eval $(call KernelPackage,wdt-geode))
+
+
+define KernelPackage/cs5535-clockevt
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=CS5535/CS5536 high-res timer (MFGPT) events
+  DEPENDS:=@TARGET_x86 +kmod-cs5535-mfgpt
+  KCONFIG:=CONFIG_CS5535_CLOCK_EVENT_SRC
+  FILES:=$(LINUX_DIR)/drivers/clocksource/cs5535-clockevt.ko
+  AUTOLOAD:=$(call AutoLoad,50,cs5535-clockevt)
+endef
+
+define KernelPackage/cs5535-clockevt/description
+  Kernel module for CS5535/6 high-res clock event source
+endef
+
+$(eval $(call KernelPackage,cs5535-clockevt))
+
+
+define KernelPackage/cs5535-mfgpt
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=CS5535/6 Multifunction General Purpose Timer
+  DEPENDS:=@TARGET_x86 +kmod-cs5535-mfd
+  KCONFIG:=CONFIG_CS5535_MFGPT
+  FILES:=$(LINUX_DIR)/drivers/misc/cs5535-mfgpt.ko
+  AUTOLOAD:=$(call AutoLoad,45,cs5535-mfgpt)
+endef
+
+define KernelPackage/cs5535-mfgpt/description
+  Kernel module for CS5535/6 multifunction general purpose timer.
+endef
+
+$(eval $(call KernelPackage,cs5535-mfgpt))
+
+
+define KernelPackage/cs5535-mfd
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=CS5535/6 Multifunction General Purpose Driver
+  DEPENDS:=@TARGET_x86
+  KCONFIG:=CONFIG_MFD_CS5535
+  FILES:= \
+  	$(LINUX_DIR)/drivers/mfd/mfd-core.ko \
+  	$(LINUX_DIR)/drivers/mfd/cs5535-mfd.ko 
+  AUTOLOAD:=$(call AutoLoad,44,mfd-core cs5535-mfd)
+endef
+
+define KernelPackage/cs5535-mfd/description
+  Core driver for CS5535/CS5536 MFD functions.
+endef
+
+$(eval $(call KernelPackage,cs5535-mfd))
+
+
+define KernelPackage/wdt-omap
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=OMAP Watchdog timer
+  DEPENDS:=@(TARGET_omap24xx||TARGET_omap35xx)
+  KCONFIG:=CONFIG_OMAP_WATCHDOG
+  FILES:=$(LINUX_DIR)/drivers/$(WATCHDOG_DIR)/omap_wdt.ko
+  AUTOLOAD:=$(call AutoLoad,50,omap_wdt.ko)
+endef
+
+define KernelPackage/wdt-omap/description
+  Kernel module for TI omap watchdog timer.
+endef
+
+$(eval $(call KernelPackage,wdt-omap))
+
+
+define KernelPackage/wdt-orion
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Marvell Orion Watchdog timer
+  DEPENDS:=@TARGET_orion
+  KCONFIG:=CONFIG_ORION_WATCHDOG
+  FILES:=$(LINUX_DIR)/drivers/$(WATCHDOG_DIR)/orion_wdt.ko
+  AUTOLOAD:=$(call AutoLoad,50,orion_wdt)
+endef
+
+define KernelPackage/wdt-orion/description
+  Kernel module for Marvell orion watchdog timer.
+endef
+
+$(eval $(call KernelPackage,wdt-orion))
 
 
 define KernelPackage/wdt-sc520
@@ -711,7 +699,6 @@ endef
 
 $(eval $(call KernelPackage,wdt-scx200))
 
-
 define KernelPackage/pwm
   SUBMENU:=$(OTHER_MENU)
   TITLE:=PWM generic API
@@ -741,3 +728,51 @@ define KernelPackage/pwm-gpio/description
 endef
 
 $(eval $(call KernelPackage,pwm-gpio))
+
+define KernelPackage/rtc-core
+  SUBMENU:=$(OTHER_MENU)
+  DEPENDS:=@LINUX_2_6_30||LINUX_2_6_31||LINUX_2_6_32||LINUX_2_6_36||LINUX_2_6_37||LINUX_2_6_38||LINUX_2_6_39||BROKEN
+  TITLE:=Real Time Clock class support
+  KCONFIG:=CONFIG_RTC_CLASS
+  FILES:=$(LINUX_DIR)/drivers/rtc/rtc-core.ko
+  AUTOLOAD:=$(call AutoLoad,29,rtc-core)
+endef
+
+define KernelPackage/rtc-core/description
+ Generic RTC class support.
+endef
+
+$(eval $(call KernelPackage,rtc-core))
+
+define KernelPackage/rtc-pcf8563
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Philips PCF8563/Epson RTC8564 RTC support
+  DEPENDS:=+kmod-rtc-core
+  KCONFIG:=CONFIG_RTC_DRV_PCF8563
+  FILES:=$(LINUX_DIR)/drivers/rtc/rtc-pcf8563.ko
+  AUTOLOAD:=$(call AutoLoad,60,rtc-pcf8563)
+endef
+
+define KernelPackage/rtc-pcf8563/description
+ Kernel module for Philips PCF8563 RTC chip.
+ The Epson RTC8564 should work as well.
+endef
+
+$(eval $(call KernelPackage,rtc-pcf8563))
+
+
+define KernelPackage/n810bm
+  SUBMENU:=$(OTHER_MENU)
+  TITLE:=Nokia N810 battery management driver
+  DEPENDS:=@TARGET_omap24xx
+  KCONFIG:=CONFIG_N810BM
+  FILES:=$(LINUX_DIR)/drivers/cbus/n810bm.ko
+  AUTOLOAD:=$(call AutoLoad,01,n810bm)
+endef
+
+define KernelPackage/n810bm/description
+  Nokia N810 battery management driver.
+  Controls battery power management and battery charging.
+endef
+
+$(eval $(call KernelPackage,n810bm))

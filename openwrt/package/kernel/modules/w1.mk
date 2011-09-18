@@ -48,6 +48,37 @@ endef
 
 $(eval $(call KernelPackage,w1-master-gpio))
 
+define KernelPackage/w1-master-ds2482
+  TITLE:=DS2482 1-wire i2c bus master driver
+  KCONFIG:=CONFIG_W1_MASTER_DS2482
+  FILES:=$(W1_MASTERS_DIR)/ds2482.ko
+  AUTOLOAD:=$(call AutoLoad,60,ds2482)
+  $(call AddDepends/w1,+kmod-i2c-core)
+endef
+
+define KernelPackage/w1-master-ds2482/description
+  Kernel module for the DS2482 i2c 1-wire bus master driver
+  NOTE: Init with: echo ds2482 0x18 > /sys/bus/i2c/devices/i2c-0/new_device
+  or use owfs
+endef
+
+$(eval $(call KernelPackage,w1-master-ds2482))
+
+
+define KernelPackage/w1-master-ds2490
+  TITLE:=DS2490 1-wire usb bus master driver
+  DEPENDS:=@USB_SUPPORT +kmod-usb-core
+  KCONFIG:=CONFIG_W1_MASTER_DS2490
+  FILES:=$(W1_MASTERS_DIR)/ds2490.ko
+  AUTOLOAD:=$(call AutoLoad,60,ds2490)
+  $(call AddDepends/w1)
+endef
+ 
+define KernelPackage/w1-master-ds2490/description
+  Kernel module for the DS2490 usb 1-wire bus master driver
+endef
+
+$(eval $(call KernelPackage,w1-master-ds2490))
 
 #
 # 1-wire slaves

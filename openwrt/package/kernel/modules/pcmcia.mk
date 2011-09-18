@@ -16,24 +16,6 @@ define KernelPackage/pcmcia-core
 	CONFIG_CARDBUS \
 	CONFIG_PCCARD \
 	PCMCIA_DEBUG=n
-endef
-
-define KernelPackage/pcmcia-core/2.4
-#  KCONFIG:= \
-#	CONFIG_PCMCIA \
-#	CONFIG_CARDBUS
-  FILES:= \
-	$(LINUX_DIR)/drivers/pcmcia/pcmcia_core.ko \
-	$(LINUX_DIR)/drivers/pcmcia/ds.ko \
-	$(LINUX_DIR)/drivers/pcmcia/yenta_socket.ko
-  AUTOLOAD:=$(call AutoLoad,25,pcmcia_core ds yenta_socket)
-endef
-
-define KernelPackage/pcmcia-core/2.6
-#  KCONFIG:= \
-#	CONFIG_PCCARD \
-#	CONFIG_PCMCIA \
-#	PCMCIA_DEBUG=n
   FILES:= \
 	$(LINUX_DIR)/drivers/pcmcia/pcmcia_core.ko \
 	$(LINUX_DIR)/drivers/pcmcia/pcmcia.ko
@@ -46,26 +28,35 @@ endef
 
 $(eval $(call KernelPackage,pcmcia-core))
 
+define KernelPackage/pcmcia-rsrc
+  SUBMENU:=$(PCMCIA_MENU)
+  TITLE:=PCMCIA resource support
+  DEPENDS:=kmod-pcmcia-core
+  KCONFIG:=CONFIG_PCCARD_NONSTATIC=y
+# For Linux 2.6.35+
+ifneq ($(wildcard $(LINUX_DIR)/drivers/pcmcia/pcmcia_rsrc.ko),)
+  FILES:=$(LINUX_DIR)/drivers/pcmcia/pcmcia_rsrc.ko
+  AUTOLOAD:=$(call AutoLoad,26,pcmcia_rsrc)
+else
+  FILES:=$(LINUX_DIR)/drivers/pcmcia/rsrc_nonstatic.ko \
+  AUTOLOAD:=$(call AutoLoad,26,rsrc_nonstatic)
+endif
+endef
+
+define KernelPackage/pcmcia-rsrc/description
+  Kernel support for PCMCIA resource allocation
+endef
+
+$(eval $(call KernelPackage,pcmcia-rsrc))
+
 
 define KernelPackage/pcmcia-yenta
   SUBMENU:=$(PCMCIA_MENU)
   TITLE:=yenta socket driver
-  DEPENDS:=kmod-pcmcia-core
-  KCONFIG:= \
-	CONFIG_PCCARD_NONSTATIC \
-	CONFIG_YENTA
-# For Linux 2.6.35+
-ifneq ($(wildcard $(LINUX_DIR)/drivers/pcmcia/pcmcia_rsrc.ko),)
-  FILES:= \
-	$(LINUX_DIR)/drivers/pcmcia/pcmcia_rsrc.ko \
-	$(LINUX_DIR)/drivers/pcmcia/yenta_socket.ko
+  DEPENDS:=kmod-pcmcia-rsrc
+  KCONFIG:=CONFIG_YENTA
+  FILES:=$(LINUX_DIR)/drivers/pcmcia/yenta_socket.ko
   AUTOLOAD:=$(call AutoLoad,41,pcmcia_rsrc yenta_socket)
-else
-  FILES:= \
-	$(LINUX_DIR)/drivers/pcmcia/rsrc_nonstatic.ko \
-	$(LINUX_DIR)/drivers/pcmcia/yenta_socket.ko
-  AUTOLOAD:=$(call AutoLoad,41,rsrc_nonstatic yenta_socket)
-endif
 endef
 
 $(eval $(call KernelPackage,pcmcia-yenta))
@@ -78,17 +69,12 @@ define KernelPackage/pcmcia-serial
   KCONFIG:= \
 	CONFIG_PCMCIA_SERIAL_CS \
 	CONFIG_SERIAL_8250_CS
+  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.38)),1)
+    FILES:=$(LINUX_DIR)/drivers/tty/serial/serial_cs.ko
+  else
+    FILES:=$(LINUX_DIR)/drivers/serial/serial_cs.ko
+  endif
   AUTOLOAD:=$(call AutoLoad,45,serial_cs)
-endef
-
-define KernelPackage/pcmcia-serial/2.4
-#  KCONFIG:=CONFIG_PCMCIA_SERIAL_CS
-  FILES:=$(LINUX_DIR)/drivers/char/pcmcia/serial_cs.ko
-endef
-
-define KernelPackage/pcmcia-serial/2.6
-#  KCONFIG:=CONFIG_SERIAL_8250_CS
-  FILES:=$(LINUX_DIR)/drivers/serial/serial_cs.ko
 endef
 
 define KernelPackage/pcmcia-serial/description

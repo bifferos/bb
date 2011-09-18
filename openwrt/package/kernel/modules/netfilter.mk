@@ -24,7 +24,7 @@ endef
 define KernelPackage/ipt-core/description
  Netfilter core kernel modules
  Includes:
- - comment (2.6)
+ - comment
  - limit
  - LOG
  - mac
@@ -54,7 +54,7 @@ define KernelPackage/ipt-conntrack/description
  Netfilter (IPv4) kernel modules for connection tracking
  Includes:
  - conntrack
- - defrag (2.6)
+ - defrag
  - iptables_raw
  - NOTRACK
  - state
@@ -116,14 +116,12 @@ define KernelPackage/ipt-ipopt/description
  - CLASSIFY
  - dscp/DSCP
  - ecn/ECN
- - hl/HL (2.6.30 and later)
+ - hl/HL
  - length
  - mark/MARK
- - statistic (2.6)
+ - statistic
  - tcpmss
  - time
- - tos/TOS (prior to 2.6.25)
- - ttl/TTL (prior to 2.6.30)
  - unclean
 endef
 
@@ -143,7 +141,7 @@ define KernelPackage/ipt-ipsec/description
  Includes:
  - ah
  - esp
- - policy (2.6)
+ - policy
 endef
 
 $(eval $(call KernelPackage,ipt-ipsec))
@@ -177,7 +175,6 @@ endef
 define KernelPackage/ipt-nat-extra/description
  Netfilter (IPv4) kernel modules for extra NAT targets
  Includes:
- - MIRROR (2.4)
  - NETMAP
  - REDIRECT
 endef
@@ -218,38 +215,14 @@ define KernelPackage/ipt-nathelper-extra/description
  - amanda
  - h323
  - mms
- - pptp (2.6)
- - proto_gre (2.6)
+ - pptp
+ - proto_gre
  - rtsp
- - sip (2.6)
+ - sip
  - snmp_basic
 endef
 
 $(eval $(call KernelPackage,ipt-nathelper-extra))
-
-
-define KernelPackage/ipt-imq
-  TITLE:=Intermediate Queueing support
-  KCONFIG:= \
-	CONFIG_IMQ \
-	CONFIG_IMQ_BEHAVIOR_BA=y \
-	CONFIG_IMQ_NUM_DEVS=2 \
-	CONFIG_NETFILTER_XT_TARGET_IMQ
-  FILES:= \
-	$(LINUX_DIR)/drivers/net/imq.ko \
-	$(foreach mod,$(IPT_IMQ-m),$(LINUX_DIR)/net/$(mod).ko)
-  AUTOLOAD:=$(call AutoLoad,46,$(notdir \
-	imq \
-	$(IPT_IMQ-m) \
-  ))
-  $(call AddDepends/ipt)
-endef
-
-define KernelPackage/ipt-imq/description
- Kernel support for Intermediate Queueing devices
-endef
-
-$(eval $(call KernelPackage,ipt-imq))
 
 
 define KernelPackage/ipt-queue
@@ -286,8 +259,41 @@ endef
 $(eval $(call KernelPackage,ipt-ulog))
 
 
+define KernelPackage/ipt-debug
+  TITLE:=Module for debugging/development
+  KCONFIG:=$(KCONFIG_IPT_DEBUG)
+  DEFAULT:=n
+  FILES:=$(foreach mod,$(IPT_DEBUG-m),$(LINUX_DIR)/net/$(mod).ko)
+  AUTOLOAD:=$(call AutoLoad,45,$(notdir $(IPT_DEBUG-m)))
+  $(call AddDepends/ipt)
+endef
+
+define KernelPackage/ipt-debug/description
+ Netfilter modules for debugging/development of the firewall
+ Includes:
+ - TRACE
+endef
+
+$(eval $(call KernelPackage,ipt-debug))
+
+
+define KernelPackage/ipt-led
+  TITLE:=Module to trigger a LED with a Netfilter rule
+  KCONFIG:=$(KCONFIG_IPT_LED)
+  FILES:=$(foreach mod,$(IPT_LED-m),$(LINUX_DIR)/net/$(mod).ko)
+  AUTOLOAD:=$(call AutoLoad,61,$(notdir $(IPT_LED-m)))
+  $(call AddDepends/ipt)
+endef
+
+define KernelPackage/ipt-led/description
+ Netfilter target to trigger a LED when a network packet is matched.
+endef
+
+$(eval $(call KernelPackage,ipt-led))
+
 define KernelPackage/ipt-tproxy
   TITLE:=Transparent proxying support
+  DEPENDS+=+IPV6:kmod-ipv6
   KCONFIG:= \
   	CONFIG_NETFILTER_TPROXY \
   	CONFIG_NETFILTER_XT_MATCH_SOCKET \
@@ -295,7 +301,7 @@ define KernelPackage/ipt-tproxy
   FILES:= \
   	$(LINUX_DIR)/net/netfilter/nf_tproxy_core.ko \
   	$(foreach mod,$(IPT_TPROXY-m),$(LINUX_DIR)/net/$(mod).ko)
-  AUTOLOAD:=$(call AutoLoad,45,$(notdir nf_tproxy_core $(IPT_TPROXY-m)))
+  AUTOLOAD:=$(call AutoLoad,50,$(notdir nf_tproxy_core $(IPT_TPROXY-m)))
   $(call AddDepends/ipt)
 endef
 
@@ -304,6 +310,41 @@ define KernelPackage/ipt-tproxy/description
 endef
 
 $(eval $(call KernelPackage,ipt-tproxy))
+
+define KernelPackage/ipt-tee
+  TITLE:=TEE support
+  KCONFIG:= \
+  	CONFIG_NETFILTER_XT_TARGET_TEE
+  FILES:= \
+  	$(LINUX_DIR)/net/netfilter/xt_TEE.ko \
+  	$(foreach mod,$(IPT_TEE-m),$(LINUX_DIR)/net/$(mod).ko)
+  AUTOLOAD:=$(call AutoLoad,45,$(notdir nf_tee $(IPT_TEE-m)))
+  $(call AddDepends/ipt)
+endef
+
+define KernelPackage/ipt-tee/description
+  Kernel modules for TEE
+endef
+
+$(eval $(call KernelPackage,ipt-tee))
+
+
+define KernelPackage/ipt-u32
+  TITLE:=U32 support
+  KCONFIG:= \
+  	CONFIG_NETFILTER_XT_MATCH_U32
+  FILES:= \
+  	$(LINUX_DIR)/net/netfilter/xt_u32.ko \
+  	$(foreach mod,$(IPT_U32-m),$(LINUX_DIR)/net/$(mod).ko)
+  AUTOLOAD:=$(call AutoLoad,45,$(notdir nf_tee $(IPT_U32-m)))
+  $(call AddDepends/ipt)
+endef
+
+define KernelPackage/ipt-u32/description
+  Kernel modules for U32
+endef
+
+$(eval $(call KernelPackage,ipt-u32))
 
 
 define KernelPackage/ipt-iprange
@@ -334,7 +375,6 @@ endef
 define KernelPackage/ipt-extra/description
  Other Netfilter (IPv4) kernel modules
  Includes:
- - condition (2.4 only)
  - owner
  - physdev (if bridge support was enabled in kernel)
  - pkttype

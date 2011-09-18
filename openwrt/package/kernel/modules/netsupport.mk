@@ -89,9 +89,13 @@ define KernelPackage/capi
 	CONFIG_ISDN_CAPI_CAPIFS
   FILES:= \
 	$(LINUX_DIR)/drivers/isdn/capi/kernelcapi.ko \
-	$(LINUX_DIR)/drivers/isdn/capi/capifs.ko \
 	$(LINUX_DIR)/drivers/isdn/capi/capi.ko
+ ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,3.0)),1)
+  AUTOLOAD:=$(call AutoLoad,30,kernelcapi capi)
+ else
+  FILES+= $(LINUX_DIR)/drivers/isdn/capi/capifs.ko
   AUTOLOAD:=$(call AutoLoad,30,kernelcapi capifs capi)
+ endif
 endef
 
 define KernelPackage/capi/description
@@ -177,7 +181,7 @@ IPSEC-m:= \
 define KernelPackage/ipsec
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=IPsec related modules (IPv4 and IPv6)
-  DEPENDS:=+kmod-crypto-core +kmod-crypto-des +kmod-crypto-hmac +kmod-crypto-md5 +kmod-crypto-sha1
+  DEPENDS:=+kmod-crypto-iv +kmod-crypto-des +kmod-crypto-hmac +kmod-crypto-md5 +kmod-crypto-sha1 +kmod-crypto-deflate +kmod-crypto-cbc
   KCONFIG:= \
 	CONFIG_NET_KEY \
 	CONFIG_XFRM_USER \
@@ -337,8 +341,9 @@ $(eval $(call KernelPackage,ipv6))
 define KernelPackage/sit
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   DEPENDS:=+kmod-ipv6 +kmod-iptunnel4
-  TITLE:=IPv6-in-IPv4 tunnelling
-  KCONFIG:=CONFIG_IPV6 CONFIG_IPV6_SIT
+  TITLE:=IPv6-in-IPv4 tunnel
+  KCONFIG:=CONFIG_IPV6_SIT \
+	CONFIG_IPV6_SIT_6RD=y
   FILES:=$(LINUX_DIR)/net/ipv6/sit.ko
   AUTOLOAD:=$(call AutoLoad,32,sit)
 endef
@@ -355,9 +360,7 @@ define KernelPackage/ip6-tunnel
   TITLE:=IP-in-IPv6 tunnelling
   DEPENDS:= +kmod-ipv6 +kmod-iptunnel6
   KCONFIG:= CONFIG_IPV6_TUNNEL
-  FILES:= $(foreach mod,ip6_tunnel, \
-	$(LINUX_DIR)/net/ipv6/$(mod).ko \
-  )
+  FILES:=$(LINUX_DIR)/net/ipv6/ip6_tunnel.ko
   AUTOLOAD:=$(call AutoLoad,32,ip6_tunnel)
 endef
 
@@ -371,8 +374,15 @@ $(eval $(call KernelPackage,ip6-tunnel))
 define KernelPackage/gre
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=GRE support
-  KCONFIG:=CONFIG_NET_IPGRE
-  FILES=$(LINUX_DIR)/net/ipv4/ip_gre.ko
+  DEPENDS:=+PACKAGE_kmod-ipv6:kmod-ipv6
+  KCONFIG:=CONFIG_NET_IPGRE CONFIG_NET_IPGRE_DEMUX
+ ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.37)),1)
+  FILES:=$(LINUX_DIR)/net/ipv4/ip_gre.ko $(LINUX_DIR)/net/ipv4/gre.ko
+  AUTOLOAD:=$(call AutoLoad,39,gre ip_gre)
+ else
+  FILES:=$(LINUX_DIR)/net/ipv4/ip_gre.ko
+  AUTOLOAD:=$(call AutoLoad,39,ip_gre)
+ endif
 endef
 
 define KernelPackage/gre/description
@@ -468,13 +478,31 @@ endef
 
 $(eval $(call KernelPackage,pppoa))
 
+
+define KernelPackage/pptp
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=PPtP support
+  DEPENDS:=kmod-ppp +kmod-gre @!LINUX_2_6_30&&!LINUX_2_6_31&&!LINUX_2_6_32&&!LINUX_2_6_36
+  KCONFIG:=CONFIG_PPTP
+  FILES:=$(LINUX_DIR)/drivers/net/pptp.ko
+  AUTOLOAD:=$(call AutoLoad,41,pptp)
+endef
+
+$(eval $(call KernelPackage,pptp))
+	
+
 define KernelPackage/pppol2tp
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=PPPoL2TP support
-  DEPENDS:=kmod-ppp +kmod-pppoe
+  DEPENDS:=kmod-ppp +kmod-pppoe +!LINUX_2_6_30&&!LINUX_2_6_31&&!LINUX_2_6_32:kmod-l2tp
   KCONFIG:=CONFIG_PPPOL2TP
-  FILES:=$(LINUX_DIR)/drivers/net/pppol2tp.ko
-  AUTOLOAD:=$(call AutoLoad,40,pppol2tp)
+  ifeq ($(strip $(call CompareKernelPatchVer,$(KERNEL_PATCHVER),ge,2.6.35)),1)
+    FILES:=$(LINUX_DIR)/net/l2tp/l2tp_ppp.ko
+    AUTOLOAD:=$(call AutoLoad,40,l2tp_ppp)
+  else
+    FILES:=$(LINUX_DIR)/drivers/net/pppol2tp.ko
+    AUTOLOAD:=$(call AutoLoad,40,pppol2tp)
+  endif
 endef
 
 define KernelPackage/pppol2tp/description
@@ -503,7 +531,7 @@ $(eval $(call KernelPackage,ipoa))
 define KernelPackage/mppe
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=Microsoft PPP compression/encryption
-  DEPENDS:=kmod-ppp +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-sha1
+  DEPENDS:=kmod-ppp +kmod-crypto-core +kmod-crypto-arc4 +kmod-crypto-sha1 +kmod-crypto-ecb
   KCONFIG:= \
 	CONFIG_PPP_MPPE_MPPC \
 	CONFIG_PPP_MPPE
@@ -547,6 +575,8 @@ define KernelPackage/sched
 	CONFIG_NET_ACT_MIRRED \
 	CONFIG_NET_ACT_IPT \
 	CONFIG_NET_ACT_POLICE \
+	CONFIG_NET_ACT_CONNMARK \
+	CONFIG_NET_ACT_SKBEDIT \
 	CONFIG_NET_EMATCH=y \
 	CONFIG_NET_EMATCH_CMP \
 	CONFIG_NET_EMATCH_NBYTE \
@@ -612,6 +642,7 @@ $(eval $(call KernelPackage,mp-alg))
 
 define KernelPackage/pktgen
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  DEPENDS:=@!TARGET_uml
   TITLE:=Network packet generator
   KCONFIG:=CONFIG_NET_PKTGEN
   FILES:=$(LINUX_DIR)/net/core/pktgen.ko
@@ -626,11 +657,14 @@ $(eval $(call KernelPackage,pktgen))
 
 define KernelPackage/l2tp
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
-  DEPENDS:=@LINUX_2_6_35
-  TITLE:=L2TPv3 Support
-  KCONFIG:=CONFIG_L2TP CONFIG_L2TP_DEBUGFS=n
-  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_core.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,32,l2tp_core)
+  DEPENDS:=@!LINUX_2_6_30&&!LINUX_2_6_31&&!LINUX_2_6_32
+  TITLE:=Layer Two Tunneling Protocol (L2TP)
+  KCONFIG:=CONFIG_L2TP \
+	CONFIG_L2TP_V3=y \
+	CONFIG_L2TP_DEBUGFS=n
+  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_core.ko \
+	$(LINUX_DIR)/net/l2tp/l2tp_netlink.ko
+  AUTOLOAD:=$(call AutoLoad,32,l2tp_core l2tp_netlink)
 endef
 
 define KernelPackage/l2tp/description
@@ -639,36 +673,33 @@ endef
 
 $(eval $(call KernelPackage,l2tp))
 
+
 define KernelPackage/l2tp-eth
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
   TITLE:=L2TP ethernet pseudowire support for L2TPv3
   DEPENDS:=+kmod-l2tp
-  KCONFIG:= CONFIG_L2TP_V3=y \
-  CONFIG_L2TP_ETH
-  FILES:= \
-	  $(LINUX_DIR)/net/l2tp/l2tp_netlink.$(LINUX_KMOD_SUFFIX) \
-	  $(LINUX_DIR)/net/l2tp/l2tp_eth.$(LINUX_KMOD_SUFFIX) 
-  AUTOLOAD:=$(call AutoLoad,32,l2tp_core l2tp_netlink l2tp_eth)
+  KCONFIG:=CONFIG_L2TP_ETH
+  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_eth.ko
+  AUTOLOAD:=$(call AutoLoad,33,l2tp_eth)
 endef
 
 define KernelPackage/l2tp-eth/description
- Kernel modules for L2TP V3 pseudowire support
+ Kernel modules for L2TP ethernet pseudowire support for L2TPv3
 endef
 
 $(eval $(call KernelPackage,l2tp-eth))
 
 define KernelPackage/l2tp-ip
   SUBMENU:=$(NETWORK_SUPPORT_MENU)
-  TITLE:=Support for L2TP-over-IP socket family
+  TITLE:=L2TP IP encapsulation for L2TPv3
   DEPENDS:=+kmod-l2tp
-  KCONFIG:= CONFIG_L2TP_V3=y \
-  CONFIG_L2TP_IP
-  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_ip.$(LINUX_KMOD_SUFFIX)
-  AUTOLOAD:=$(call AutoLoad,32,l2tp_core l2tp_ip)
+  KCONFIG:=CONFIG_L2TP_IP
+  FILES:=$(LINUX_DIR)/net/l2tp/l2tp_ip.ko
+  AUTOLOAD:=$(call AutoLoad,33,l2tp_ip)
 endef
 
 define KernelPackage/l2tp-ip/description
- Kernel modules for L2TP-over-IP socket family
+ Kernel modules for L2TP IP encapsulation for L2TPv3
 endef
 
 $(eval $(call KernelPackage,l2tp-ip))
@@ -684,7 +715,7 @@ define KernelPackage/sctp
      CONFIG_SCTP_HMAC_NONE=n \
      CONFIG_SCTP_HMAC_SHA1=n \
      CONFIG_SCTP_HMAC_MD5=y
-  FILES:= $(LINUX_DIR)/net/sctp/sctp.$(LINUX_KMOD_SUFFIX)
+  FILES:= $(LINUX_DIR)/net/sctp/sctp.ko
   AUTOLOAD:= $(call AutoLoad,32,sctp)
   DEPENDS:=+kmod-libcrc32c +kmod-crypto-md5 +kmod-crypto-hmac
 endef
@@ -695,4 +726,19 @@ endef
 
 $(eval $(call KernelPackage,sctp))
 
+
+define KernelPackage/netem
+  SUBMENU:=$(NETWORK_SUPPORT_MENU)
+  TITLE:=Network emulation functionality
+  DEPENDS:=+kmod-sched
+  KCONFIG:=CONFIG_NET_SCH_NETEM
+  FILES:=$(LINUX_DIR)/net/sched/sch_netem.$(LINUX_KMOD_SUFFIX)
+  AUTOLOAD:=$(call AutoLoad,99,netem)
+endef
+
+define KernelPackage/netem/description
+  Kernel modules for emulating the properties of wide area networks
+endef
+
+$(eval $(call KernelPackage,netem))
 

@@ -7,42 +7,10 @@
 
 WIRELESS_MENU:=Wireless Drivers
 
-define KernelPackage/lib80211
-  SUBMENU:=$(WIRELESS_MENU)
-  TITLE:=802.11 Networking stack
-  KCONFIG:= \
-	CONFIG_LIB80211 \
-	CONFIG_LIB80211_CRYPT_WEP \
-	CONFIG_LIB80211_CRYPT_TKIP \
-	CONFIG_LIB80211_CRYPT_CCMP
-  FILES:= \
-  	$(LINUX_DIR)/net/wireless/lib80211.ko \
-  	$(LINUX_DIR)/net/wireless/lib80211_crypt_wep.ko \
-  	$(LINUX_DIR)/net/wireless/lib80211_crypt_ccmp.ko \
-  	$(LINUX_DIR)/net/wireless/lib80211_crypt_tkip.ko
-  AUTOLOAD:=$(call AutoLoad,10, \
-	lib80211 \
-	lib80211_crypt_wep \
-	lib80211_crypt_ccmp \
-	lib80211_crypt_tkip \
-  )
-endef
-
-define KernelPackage/lib80211/description
- Kernel modules for 802.11 Networking stack
- Includes:
- - lib80211
- - lib80211_crypt_wep
- - lib80211_crypt_tkip
- - lib80211_crytp_ccmp
-endef
-
-$(eval $(call KernelPackage,lib80211))
-
 define KernelPackage/net-airo
   SUBMENU:=$(WIRELESS_MENU)
   TITLE:=Cisco Aironet driver
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@PCI_SUPPORT +@DRIVER_WEXT_SUPPORT
   KCONFIG:=CONFIG_AIRO
   FILES:=$(LINUX_DIR)/drivers/net/wireless/airo.ko
   AUTOLOAD:=$(call AutoLoad,50,airo)
@@ -55,76 +23,64 @@ endef
 $(eval $(call KernelPackage,net-airo))
 
 
-define KernelPackage/net-hermes
+define KernelPackage/net-zd1201
   SUBMENU:=$(WIRELESS_MENU)
-  TITLE:=Hermes 802.11b chipset support
-  DEPENDS:=@PCI_SUPPORT||PCMCIA_SUPPORT
-  KCONFIG:=CONFIG_HERMES \
-	CONFIG_HERMES_CACHE_FW_ON_INIT=n
-  FILES:= \
-	$(LINUX_DIR)/drivers/net/wireless/orinoco/orinoco.ko
-  AUTOLOAD:=$(call AutoLoad,50,orinoco)
+  TITLE:=Zydas ZD1201 support
+  DEPENDS:=@USB_SUPPORT +@DRIVER_WEXT_SUPPORT
+  KCONFIG:=CONFIG_USB_ZD1201
+  FILES:=$(LINUX_DIR)/drivers/net/wireless/zd1201.ko
+  AUTOLOAD:=$(call AutoLoad,60,zd1201)
 endef
 
-define KernelPackage/net-hermes/description
- Kernel support for Hermes 802.11b chipsets
+define KernelPackage/net-zd1201/description
+ Kernel modules for Zydas ZD1201 support
+ Devices using this chip:
+   * Sweex LC100020
+   * Zyxel ZyAir B-220
+   * Peabird USB
+   * Gigafast WF741-UIC
+   * E-Tech Wireless USB Adapter
+   * DSE 802.11b USB wireless LAN adapter
+   * CC and C WLAN USB Adapter (WL 1202)
+   * Edimax EW-7117U
+   * X-Micro WLAN 11b USB Adapter
+   * Belkin F5D6051
+   * Topcom SKYR@CER WIRELESS USB STICK 11
+   * Surecom EP-9001
+   * JAHT WN-1011U
+   * BeWAN Wi-Fi USB 11
+   * NorthQ NQ9000
+   * MSI UB11B
+   * Origo WLL-1610
+   * Longshine LCS-8131R
+   * Gigabyte GN-WLBZ201
 endef
 
-$(eval $(call KernelPackage,net-hermes))
+ZD1201FW_NAME:=zd1201
+ZD1201FW_VERSION:=0.14
+ZD1201FW_DIR:=$(ZD1201FW_NAME)-$(ZD1201FW_VERSION)-fw
+ZD1201FW_FILE:=$(ZD1201FW_DIR).tar.gz
 
-
-define KernelPackage/net-hermes-pci
-  SUBMENU:=$(WIRELESS_MENU)
-  TITLE:=Intersil Prism 2.5 PCI support
-  DEPENDS:=@PCI_SUPPORT +kmod-net-hermes
-  KCONFIG:=CONFIG_PCI_HERMES
-  FILES:=$(LINUX_DIR)/drivers/net/wireless/orinoco/orinoco_pci.ko
-  AUTOLOAD:=$(call AutoLoad,55,orinoco_pci)
+define Download/net-zd1201
+  FILE:=$(ZD1201FW_FILE)
+  #http://downloads.sourceforge.net/project/linux-lc100020/%28NEW%29%20zd1201%20driver/zd1201.%20Version%200.14/zd1201-0.14-fw.tar.gz
+  URL:=@SF/linux-lc100020/\(NEW\)\ $(ZD1201FW_NAME)\ driver/$(ZD1201FW_NAME).\ Version\ $(ZD1201FW_VERSION)/
+  MD5SUM:=07a4febc365121f975e2c5e59791d55d
 endef
 
-define KernelPackage/net-hermes-pci/description
- Kernel modules for Intersil Prism 2.5 PCI support
+define KernelPackage/net-zd1201/install
+	$(INSTALL_DIR) $(1)/lib/firmware
+	$(TAR) -C $(1)/lib/firmware -zxf $(DL_DIR)/$(ZD1201FW_FILE) --strip-components=1 $(ZD1201FW_DIR)/$(ZD1201FW_NAME).fw $(ZD1201FW_DIR)/$(ZD1201FW_NAME)-ap.fw
 endef
 
-$(eval $(call KernelPackage,net-hermes-pci))
-
-
-define KernelPackage/net-hermes-plx
-  SUBMENU:=$(WIRELESS_MENU)
-  TITLE:=PLX9052 based PCI adaptor
-  DEPENDS:=@PCI_SUPPORT +kmod-net-hermes
-  KCONFIG:=CONFIG_PLX_HERMES
-  FILES:=$(LINUX_DIR)/drivers/net/wireless/orinoco/orinoco_plx.ko
-  AUTOLOAD:=$(call AutoLoad,55,orinoco_plx)
-endef
-
-define KernelPackage/net-hermes-plx/description
- Kernel modules for Hermes in PLX9052 based PCI adaptors
-endef
-
-$(eval $(call KernelPackage,net-hermes-plx))
-
-
-define KernelPackage/net-hermes-pcmcia
-  SUBMENU:=$(WIRELESS_MENU)
-  TITLE:=Hermes based PCMCIA adaptors
-  DEPENDS:=@PCMCIA_SUPPORT +kmod-net-hermes
-  KCONFIG:=CONFIG_PCMCIA_HERMES
-  FILES:=$(LINUX_DIR)/drivers/net/wireless/orinoco/orinoco_cs.ko
-  AUTOLOAD:=$(call AutoLoad,55,orinoco_cs)
-endef
-
-define KernelPackage/net-hermes-pcmcia/description
- Kernel modules for Hermes based PCMCIA adaptors
-endef
-
-$(eval $(call KernelPackage,net-hermes-pcmcia))
+$(eval $(call Download,net-zd1201))
+$(eval $(call KernelPackage,net-zd1201))
 
 
 define KernelPackage/net-prism54
   SUBMENU:=$(WIRELESS_MENU)
   TITLE:=Intersil Prism54 support
-  DEPENDS:=@PCI_SUPPORT
+  DEPENDS:=@PCI_SUPPORT +@DRIVER_WEXT_SUPPORT
   KCONFIG:=CONFIG_PRISM54
   FILES:=$(LINUX_DIR)/drivers/net/wireless/prism54/prism54.ko
   AUTOLOAD:=$(call AutoLoad,60,prism54)

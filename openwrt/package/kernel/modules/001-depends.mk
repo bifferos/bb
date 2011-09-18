@@ -27,16 +27,16 @@ endef
 
 
 define SetDepends/input
-  DEPENDS:= @!TARGET_x86
+  DEPENDS:= @!(TARGET_x86_generic||TARGET_x86_kvm_guest)
 endef
 
 define AddDepends/input
-  DEPENDS+= +!TARGET_x86:kmod-input-core $(1)
+  DEPENDS+= +!(TARGET_x86_generic||TARGET_x86_kvm_guest):kmod-input-core $(1)
 endef
 
 
 define SetDepends/rfkill
-  DEPENDS:= @(TARGET_ar71xx||TARGET_brcm47xx||TARGET_s3c24xx||TARGET_x86)
+  DEPENDS:= @(TARGET_ar71xx||TARGET_brcm47xx||TARGET_s3c24xx||TARGET_x86||TARGET_gemini)
 endef
 
 define AddDepends/rfkill
