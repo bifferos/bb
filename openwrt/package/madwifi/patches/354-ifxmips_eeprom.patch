@@ -5,9 +5,9 @@
   *     reads and writes to understand what's going on below.
   */
 +
-+#ifdef CONFIG_IFXMIPS
-+extern int ifxmips_has_brn_block(void);
-+static int ifxmips_emulate = 0;
++#ifdef CONFIG_LANTIQ
++extern int lantiq_emulate_madwifi_eep;
++extern unsigned long long lantiq_madwifi_eep_addr;
 +#define EEPROM_EMULATION 1
 +#endif
 +
@@ -32,7 +32,7 @@
 +				val = 0x00000002;
 +			break;
 +		case 0x6004:
-+			val = cpu_to_le16(__raw_readw((u16 *) KSEG1ADDR(0xb07f0400 + addrsel)));
++			val = cpu_to_le16(__raw_readw((u16 *) KSEG1ADDR(lantiq_madwifi_eep_addr + addrsel)));
 +			/* this forces the regdomain to 0x00 (worldwide), as the original setting
 +			 * causes issues with the HAL */
 +			if (addrsel == 0x17e)
@@ -53,7 +53,7 @@
  #endif
 -	_OS_REG_WRITE(ah, reg, val);
 +#ifdef EEPROM_EMULATION
-+	if((reg >= 0x6000) && (reg <= 0x6010) && ifxmips_emulate)
++	if((reg >= 0x6000) && (reg <= 0x6010) && lantiq_emulate_madwifi_eep)
 +	{
 +		val = ath_hal_eeprom(ah, reg, val, 1);
 +	} else
@@ -70,7 +70,7 @@
 - 	u_int32_t val;
 +	u_int32_t val;
 +#ifdef EEPROM_EMULATION
-+	if((reg >= 0x6000) && (reg <= 0x6010) && ifxmips_emulate)
++	if((reg >= 0x6000) && (reg <= 0x6010) && lantiq_emulate_madwifi_eep)
 +	{
 +		val = ath_hal_eeprom(ah, reg, 0, 0);
 +	} else
@@ -85,14 +85,11 @@
  				(ath_hal_func ?: "unknown"), reg, val);
  #endif
  	return val;
-@@ -581,7 +634,9 @@ init_ath_hal(void)
+@@ -581,7 +634,6 @@ init_ath_hal(void)
  {
  	const char *sep;
  	int i;
 -
-+#ifdef CONFIG_IFXMIPS
-+	ifxmips_emulate = ifxmips_has_brn_block();
-+#endif
  	printk(KERN_INFO "%s: %s (", dev_info, ath_hal_version);
  	sep = "";
  	for (i = 0; ath_hal_buildopts[i] != NULL; i++) {

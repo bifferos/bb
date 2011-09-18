@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2010 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,15 +8,16 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=hostapd
-PKG_VERSION:=20100705
-PKG_RELEASE:=1
-PKG_REV:=2f1ce78bf78cecd7021385b04a4f55f22e76ab97
+PKG_VERSION:=20110527
+PKG_RELEASE:=2
+PKG_REV:=ceb34f250af7a7082f18c1e0451dc7fbc0f000f3
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=git://w1.fi/srv/git/hostap.git
-PKG_SOURCE_SUBDIR:=hostapd-$(PKG_VERSION)
+PKG_SOURCE_SUBDIR:=$(PKG_NAME)-$(PKG_VERSION)
 PKG_SOURCE_VERSION:=$(PKG_REV)
 PKG_SOURCE_PROTO:=git
+PKG_MIRROR_MD5SUM:=4b98902d782813b41aca1faff613f677
 
 PKG_BUILD_DEPENDS:= \
 	PACKAGE_kmod-madwifi:madwifi \
@@ -25,13 +26,14 @@ PKG_BUILD_DEPENDS:= \
 PKG_CONFIG_DEPENDS:= \
 	CONFIG_WPA_SUPPLICANT_NO_TIMESTAMP_CHECK \
 	CONFIG_PACKAGE_kmod-ath9k \
-	CONFIG_PACKAGE_kmod-rt2800-lib \
 	CONFIG_PACKAGE_kmod-mac80211 \
 	CONFIG_PACKAGE_kmod-madwifi \
 	CONFIG_PACKAGE_hostapd \
 	CONFIG_PACKAGE_hostapd-mini \
 	CONFIG_PACKAGE_kmod-hostap \
-	CONFIG_WPA_RFKILL_SUPPORT
+	CONFIG_WPA_RFKILL_SUPPORT \
+	CONFIG_DRIVER_WEXT_SUPPORT \
+	CONFIG_DRIVER_11N_SUPPORT
 
 LOCAL_TYPE=$(strip \
 		$(if $(findstring wpad,$(BUILD_VARIANT)),wpad, \
@@ -52,11 +54,7 @@ PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(BUILD_VARIANT)/$(PKG_NAME)-$(PKG_VERSI
 
 include $(INCLUDE_DIR)/package.mk
 
-ifneq ($(CONFIG_PACKAGE_kmod-rt2800-lib),)
-  HOSTAPD_IEEE80211N:=y
-endif
-
-ifneq ($(CONFIG_PACKAGE_kmod-ath9k),)
+ifneq ($(CONFIG_DRIVER_11N_SUPPORT),)
   HOSTAPD_IEEE80211N:=y
 endif
 
@@ -66,6 +64,7 @@ DRIVER_MAKEOPTS= \
 	CONFIG_DRIVER_HOSTAP=$(CONFIG_PACKAGE_kmod-hostap) \
 	CONFIG_IEEE80211N=$(HOSTAPD_IEEE80211N) \
 	CONFIG_IEEE80211W=$(CONFIG_PACKAGE_kmod-ath9k) \
+	CONFIG_DRIVER_WEXT=$(CONFIG_DRIVER_WEXT_SUPPORT) \
 	$(if $(CONFIG_WPA_RFKILL_SUPPORT),NEED_RFKILL=y)
 
 ifneq ($(LOCAL_TYPE),hostapd)
@@ -223,6 +222,9 @@ TARGET_CPPFLAGS := \
 	-DCONFIG_LIBNL20 \
 	-D_GNU_SOURCE
 
+TARGET_CFLAGS += -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections
+
 ifdef CONFIG_PACKAGE_kmod-mac80211
   TARGET_LDFLAGS += -lm -lnl-tiny
 endif
@@ -239,7 +241,7 @@ endef
 define Build/Compile/wpad
 	echo ` \
 		$(call Build/RunMake,hostapd,-s MULTICALL=1 dump_cflags); \
-		$(call Build/RunMake,wpa_supplicant,-s dump_cflags) | \
+		$(call Build/RunMake,wpa_supplicant,-s MULTICALL=1 dump_cflags) | \
 		sed -e 's,-n ,,g' -e 's,$(TARGET_CFLAGS),,' \
 	` > $(PKG_BUILD_DIR)/.cflags
 	$(call Build/RunMake,hostapd, \

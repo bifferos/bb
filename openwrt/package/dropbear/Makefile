@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2006-2009 OpenWrt.org
+# Copyright (C) 2006-2011 OpenWrt.org
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,14 +8,14 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=dropbear
-PKG_VERSION:=0.52
-PKG_RELEASE:=5
+PKG_VERSION:=0.53.1
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
 PKG_SOURCE_URL:= \
 	http://matt.ucc.asn.au/dropbear/releases/ \
 	http://www.mirrors.wiretapped.net/security/cryptography/apps/ssh/dropbear/
-PKG_MD5SUM:=1c69ec674481d7745452f68f2ea5597e
+PKG_MD5SUM:=6b8d901859d9b8a18e2f6bfe0a892a03
 
 PKG_BUILD_PARALLEL:=1
 
@@ -63,7 +63,11 @@ CONFIGURE_ARGS += \
 	--disable-loginfunc \
 	--disable-pututline \
 	--disable-pututxline \
-	--disable-zlib
+	--disable-zlib \
+	--enable-bundled-libtom
+
+TARGET_CFLAGS += -DARGTYPE=3 -ffunction-sections -fdata-sections
+TARGET_LDFLAGS += -Wl,--gc-sections
 
 define Build/Configure
 	$(SED) 's,^/\* #define PKG_MULTI.*,#define PKG_MULTI,g' $(PKG_BUILD_DIR)/options.h

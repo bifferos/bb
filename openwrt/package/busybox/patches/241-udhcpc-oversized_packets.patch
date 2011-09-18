@@ -56,14 +56,14 @@
  	packet.udp.source = htons(source_port);
  	packet.udp.dest = htons(dest_port);
 -	/* size, excluding IP header: */
--	packet.udp.len = htons(UPD_DHCP_SIZE - padding);
+-	packet.udp.len = htons(UDP_DHCP_SIZE - padding);
 -	/* for UDP checksumming, ip.len is set to UDP packet len */
 +	p_len += sizeof(packet.udp);
 +	packet.udp.len = htons(p_len);
  	packet.ip.tot_len = packet.udp.len;
--	packet.udp.check = udhcp_checksum(&packet, IP_UPD_DHCP_SIZE - padding);
+-	packet.udp.check = udhcp_checksum(&packet, IP_UDP_DHCP_SIZE - padding);
 -	/* but for sending, it is set to IP packet len */
--	packet.ip.tot_len = htons(IP_UPD_DHCP_SIZE - padding);
+-	packet.ip.tot_len = htons(IP_UDP_DHCP_SIZE - padding);
 +	p_len += sizeof(packet.ip);
 +	packet.udp.check = udhcp_checksum(&packet, p_len);
 +	packet.ip.tot_len = htons(p_len);
@@ -73,7 +73,7 @@
  	packet.ip.check = udhcp_checksum(&packet.ip, sizeof(packet.ip));
  
  	udhcp_dump_packet(dhcp_pkt);
--	result = sendto(fd, &packet, IP_UPD_DHCP_SIZE - padding, /*flags:*/ 0,
+-	result = sendto(fd, &packet, IP_UDP_DHCP_SIZE - padding, /*flags:*/ 0,
 +	result = sendto(fd, &packet, p_len, /*flags:*/ 0,
  			(struct sockaddr *) &dest_sll, sizeof(dest_sll));
  	msg = "sendto";

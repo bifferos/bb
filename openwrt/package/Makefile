@@ -14,10 +14,10 @@ ifeq ($(SDK),1)
 else
   $(curdir)/builddirs-default:=. $(sort $(package-y) $(package-m))
   $(curdir)/builddirs-prereq:=. $(sort $(prereq-y) $(prereq-m))
-  $(curdir)/builddirs-install:=. $(sort $(package-y))
+  $(curdir)/builddirs-install:=. $(filter-out base-files,$(sort $(package-y))) $(filter base-files,$(package-y))
 endif
 ifneq ($(IGNORE_ERRORS),)
-  $(curdir)/builddirs-ignore-compile:= $(if $(filter m y, $(IGNORE_ERRORS)),$(foreach m,$(IGNORE_ERRORS),$(package-$(m))),$(package-m))
+  $(curdir)/builddirs-ignore-compile:= $(if $(filter n m y, $(IGNORE_ERRORS)),$(foreach m,$(IGNORE_ERRORS),$(package-$(subst n,,$(m)))),$(package-m) $(package-))
 endif
 
 $(curdir)/install:=$(curdir)/install-cleanup
@@ -64,6 +64,14 @@ endif
 $(curdir)/rootfs-prepare: $(TMP_DIR)/.build
 	@-$(MAKE) package/preconfig
 	@if [ -d $(TOPDIR)/files ]; then \
+		( cd $(TOPDIR)/files; find -type f ) | \
+			( cd $(TARGET_DIR); while :; do \
+				read FILE; \
+				[ -z "$$FILE" ] && break; \
+				[ -L "$$FILE" ] || continue; \
+				echo "Removing symlink $(TARGET_DIR)/$$FILE"; \
+				rm -f "$$FILE"; \
+			done; ); \
 		$(CP) $(TOPDIR)/files/. $(TARGET_DIR); \
 	fi
 	@mkdir -p $(TARGET_DIR)/etc/rc.d
@@ -77,11 +85,12 @@ $(curdir)/rootfs-prepare: $(TMP_DIR)/.build
 	@-find $(TARGET_DIR) -name CVS   | $(XARGS) rm -rf
 	@-find $(TARGET_DIR) -name .svn  | $(XARGS) rm -rf
 	@-find $(TARGET_DIR) -name '.#*' | $(XARGS) rm -f
+	rm -f $(TARGET_DIR)/usr/lib/opkg/info/*.postinst
 	$(if $(CONFIG_CLEAN_IPKG),rm -rf $(TARGET_DIR)/usr/lib/opkg)
 	$(call mklibs)
 
 $(curdir)/index: FORCE
-	@(cd $(PACKAGE_DIR); $(SCRIPT_DIR)/ipkg-make-index.sh . > Packages && \
+	@(cd $(PACKAGE_DIR); $(SCRIPT_DIR)/ipkg-make-index.sh . 2>&1 > Packages && \
 		gzip -9c Packages > Packages.gz \
 	)
 

@@ -167,6 +167,9 @@ int uh_tcp_recv(struct client *cl, char *buf, int len)
 	int sz = 0;
 	int rsz = 0;
 
+	fd_set reader;
+	struct timeval timeout;
+
 	/* first serve data from peek buffer */
 	if( cl->peeklen > 0 )
 	{
@@ -180,15 +183,28 @@ int uh_tcp_recv(struct client *cl, char *buf, int len)
 	/* caller wants more */
 	if( len > 0 )
 	{
-#ifdef HAVE_TLS
-		if( cl->tls )
-			rsz = cl->server->conf->tls_recv(cl, (void *)&buf[sz], len);
-		else
-#endif
-			rsz = recv(cl->socket, (void *)&buf[sz], len, 0);
+		FD_ZERO(&reader);
+		FD_SET(cl->socket, &reader);
 
-		if( (sz == 0) || (rsz > 0) )
-			sz += rsz;
+		timeout.tv_sec  = cl->server->conf->network_timeout;
+		timeout.tv_usec = 0;
+
+		if( select(cl->socket + 1, &reader, NULL, NULL, &timeout) > 0 )
+		{
+#ifdef HAVE_TLS
+			if( cl->tls )
+				rsz = cl->server->conf->tls_recv(cl, (void *)&buf[sz], len);
+			else
+#endif
+				rsz = recv(cl->socket, (void *)&buf[sz], len, 0);
+
+			if( (sz == 0) || (rsz > 0) )
+				sz += rsz;
+		}
+		else if( sz == 0 )
+		{
+			sz = -1;
+		}
 	}
 
 	return sz;
@@ -233,7 +249,7 @@ int uh_http_sendc(struct client *cl, const char *data, int len)
 
 	if( len > 0 )
 	{
-	 	clen = snprintf(chunk, sizeof(chunk), "%X\r\n", len);
+		clen = snprintf(chunk, sizeof(chunk), "%X\r\n", len);
 		ensure_ret(uh_tcp_send(cl, chunk, clen));
 		ensure_ret(uh_tcp_send(cl, data, len));
 		ensure_ret(uh_tcp_send(cl, "\r\n", 2));
@@ -474,6 +490,7 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 	char *docroot = cl->server->conf->docroot;
 	char *pathptr = NULL;
 
+	int slash = 0;
 	int no_sym = cl->server->conf->no_symlinks;
 	int i = 0;
 	struct stat s;
@@ -516,7 +533,7 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 	}
 
 	/* create canon path */
-	for( i = strlen(buffer); i >= 0; i-- )
+	for( i = strlen(buffer), slash = (buffer[max(0, i-1)] == '/'); i >= 0; i-- )
 	{
 		if( (buffer[i] == 0) || (buffer[i] == '/') )
 		{
@@ -567,7 +584,23 @@ struct path_info * uh_path_lookup(struct client *cl, const char *url)
 			memcpy(buffer, path_phys, sizeof(buffer));
 			pathptr = &buffer[strlen(buffer)];
 
-			if( cl->server->conf->index_file )
+			/* if requested url resolves to a directory and a trailing slash
+			   is missing in the request url, redirect the client to the same
+			   url with trailing slash appended */
+			if( !slash )
+			{
+				uh_http_sendf(cl, NULL,
+					"HTTP/1.1 302 Found\r\n"
+					"Location: %s%s%s\r\n"
+					"Connection: close\r\n\r\n",
+						&path_phys[strlen(docroot)],
+						p.query ? "?" : "",
+						p.query ? p.query : ""
+				);
+
+				p.redirected = 1;
+			}
+			else if( cl->server->conf->index_file )
 			{
 				strncat(buffer, cl->server->conf->index_file, sizeof(buffer));
 
@@ -610,7 +643,10 @@ struct auth_realm * uh_auth_add(char *path, char *user, char *pass)
 {
 	struct auth_realm *new = NULL;
 	struct passwd *pwd;
+
+#ifdef HAVE_SHADOW
 	struct spwd *spwd;
+#endif
 
 	if((new = (struct auth_realm *)malloc(sizeof(struct auth_realm))) != NULL)
 	{
@@ -625,6 +661,7 @@ struct auth_realm * uh_auth_add(char *path, char *user, char *pass)
 		/* given password refers to a passwd entry */
 		if( (strlen(pass) > 3) && !strncmp(pass, "$p$", 3) )
 		{
+#ifdef HAVE_SHADOW
 			/* try to resolve shadow entry */
 			if( ((spwd = getspnam(&pass[3])) != NULL) && spwd->sp_pwdp )
 			{
@@ -632,8 +669,11 @@ struct auth_realm * uh_auth_add(char *path, char *user, char *pass)
 					min(strlen(spwd->sp_pwdp), sizeof(new->pass) - 1));
 			}
 
+			else
+#endif
+
 			/* try to resolve passwd entry */
-			else if( ((pwd = getpwnam(&pass[3])) != NULL) && pwd->pw_passwd &&
+			if( ((pwd = getpwnam(&pass[3])) != NULL) && pwd->pw_passwd &&
 				(pwd->pw_passwd[0] != '!') && (pwd->pw_passwd[0] != 0)
 			) {
 				memcpy(new->pass, pwd->pw_passwd,

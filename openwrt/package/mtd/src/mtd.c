@@ -44,36 +44,16 @@
 #include "mtd-api.h"
 #include "fis.h"
 #include "mtd.h"
-#include "crc32.h"
 
 #define MAX_ARGS 8
 #define JFFS2_DEFAULT_DIR	"" /* directory name without /, empty means root dir */
-
-#if __BYTE_ORDER == __BIG_ENDIAN
-#define STORE32_LE(X)           ((((X) & 0x000000FF) << 24) | (((X) & 0x0000FF00) << 8) | (((X) & 0x00FF0000) >> 8) | (((X) & 0xFF000000) >> 24))
-#elif __BYTE_ORDER == __LITTLE_ENDIAN
-#define STORE32_LE(X)           (X)
-#else
-#error unkown endianness!
-#endif
-
-ssize_t pread(int fd, void *buf, size_t count, off_t offset);
-ssize_t pwrite(int fd, const void *buf, size_t count, off_t offset);
-
-#define TRX_MAGIC       0x30524448      /* "HDR0" */
-struct trx_header {
-	uint32_t magic;		/* "HDR0" */
-	uint32_t len;		/* Length of file including header */
-	uint32_t crc32;		/* 32-bit CRC from flag_version to end of file */
-	uint32_t flag_version;	/* 0:15 flags, 16:31 version */
-	uint32_t offsets[3];    /* Offsets of partitions from start of header */
-};
 
 static char *buf = NULL;
 static char *imagefile = NULL;
 static char *jffs2file = NULL, *jffs2dir = JFFS2_DEFAULT_DIR;
 static int buflen = 0;
 int quiet;
+int no_erase;
 int mtdsize = 0;
 int erasesize = 0;
 
@@ -150,9 +130,9 @@ static int
 image_check(int imagefd, const char *mtd)
 {
 	int ret = 1;
-#ifdef target_brcm
-	ret = trx_check(imagefd, mtd, buf, &buflen);
-#endif
+	if (trx_check) {
+	  ret = trx_check(imagefd, mtd, buf, &buflen);
+	}
 	return ret;
 }
 
@@ -260,82 +240,6 @@ mtd_erase(const char *mtd)
 	}
 
 	close(fd);
-	return 0;
-
-}
-
-static int
-mtd_fixtrx(const char *mtd, size_t offset)
-{
-	int fd;
-	struct trx_header *trx;
-	char *buf;
-	ssize_t res;
-	size_t block_offset;
-
-	if (quiet < 2)
-		fprintf(stderr, "Trying to fix trx header in %s at 0x%x...\n", mtd, offset);
-
-	block_offset = offset & ~(erasesize - 1);
-	offset -= block_offset;
-
-	fd = mtd_check_open(mtd);
-	if(fd < 0) {
-		fprintf(stderr, "Could not open mtd device: %s\n", mtd);
-		exit(1);
-	}
-
-	if (block_offset + erasesize > mtdsize) {
-		fprintf(stderr, "Offset too large, device size 0x%x\n", mtdsize);
-		exit(1);
-	}
-
-	buf = malloc(erasesize);
-	if (!buf) {
-		perror("malloc");
-		exit(1);
-	}
-
-	res = pread(fd, buf, erasesize, block_offset);
-	if (res != erasesize) {
-		perror("pread");
-		exit(1);
-	}
-
-	trx = (struct trx_header *) (buf + offset);
-	if (trx->magic != STORE32_LE(0x30524448)) {
-		fprintf(stderr, "No trx magic found\n");
-		exit(1);
-	}
-
-	if (trx->len == STORE32_LE(erasesize - offset)) {
-		if (quiet < 2)
-			fprintf(stderr, "Header already fixed, exiting\n");
-		close(fd);
-		return 0;
-	}
-
-	trx->len = STORE32_LE(erasesize - offset);
-
-	trx->crc32 = STORE32_LE(crc32buf((char*) &trx->flag_version, erasesize - offset - 3*4));
-	if (mtd_erase_block(fd, block_offset)) {
-		fprintf(stderr, "Can't erease block at 0x%x (%s)\n", block_offset, strerror(errno));
-		exit(1);
-	}
-
-	if (quiet < 2)
-		fprintf(stderr, "New crc32: 0x%x, rewriting block\n", trx->crc32);
-
-	if (pwrite(fd, buf, erasesize, block_offset) != erasesize) {
-		fprintf(stderr, "Error writing block (%s)\n", strerror(errno));
-		exit(1);
-	}
-
-	if (quiet < 2)
-		fprintf(stderr, "Done.\n");
-
-	close (fd);
-	sync();
 	return 0;
 
 }
@@ -505,6 +409,9 @@ resume:
 				/* got an EOF marker - this is the place to add some jffs2 data */
 				skip = mtd_replace_jffs2(mtd, fd, e, jffs2file);
 
+				/* don't add it again */
+				jffs2file = NULL;
+
 				w += skip;
 				e += skip;
 				skip -= buflen;
@@ -518,31 +425,34 @@ resume:
 		}
 
 		/* need to erase the next block before writing data to it */
-		while (w + buflen > e) {
-			if (!quiet)
-				fprintf(stderr, "\b\b\b[e]");
+		if(!no_erase)
+		{
+			while (w + buflen > e) {
+				if (!quiet)
+					fprintf(stderr, "\b\b\b[e]");
 
 
-			if (mtd_erase_block(fd, e) < 0) {
-				if (next) {
-					if (w < e) {
-						write(fd, buf + offset, e - w);
-						offset = e - w;
+				if (mtd_erase_block(fd, e) < 0) {
+					if (next) {
+						if (w < e) {
+							write(fd, buf + offset, e - w);
+							offset = e - w;
+						}
+						w = 0;
+						e = 0;
+						close(fd);
+						mtd = next;
+						fprintf(stderr, "\b\b\b   \n");
+						goto resume;
+					} else {
+						fprintf(stderr, "Failed to erase block\n");
+						exit(1);
 					}
-					w = 0;
-					e = 0;
-					close(fd);
-					mtd = next;
-					fprintf(stderr, "\b\b\b   \n");
-					goto resume;
-				} else {
-					fprintf(stderr, "Failed to erase block\n");
-					exit(1);
 				}
-			}
 
-			/* erase the chunk */
-			e += erasesize;
+				/* erase the chunk */
+				e += erasesize;
+			}
 		}
 
 		if (!quiet)
@@ -590,17 +500,26 @@ static void usage(void)
 	"        refresh                 refresh mtd partition\n"
 	"        erase                   erase all data on device\n"
 	"        write <imagefile>|-     write <imagefile> (use - for stdin) to device\n"
-	"        jffs2write <file>       append <file> to the jffs2 partition on the device\n"
-	"        fixtrx                  fix the checksum in a trx header on first boot\n"
+	"        jffs2write <file>       append <file> to the jffs2 partition on the device\n");
+	if (mtd_fixtrx) {
+	    fprintf(stderr,
+	"        fixtrx                  fix the checksum in a trx header on first boot\n");
+	}
+    fprintf(stderr,	
 	"Following options are available:\n"
 	"        -q                      quiet mode (once: no [w] on writing,\n"
 	"                                           twice: no status messages)\n"
+	"        -n                      write without first erasing the blocks\n"
 	"        -r                      reboot after successful command\n"
 	"        -f                      force write without trx checks\n"
 	"        -e <device>             erase <device> before executing the command\n"
 	"        -d <name>               directory for jffs2write, defaults to \"tmp\"\n"
-	"        -j <name>               integrate <file> into jffs2 data when writing an image\n"
-	"        -o offset               offset of the trx header in the partition (for fixtrx)\n"
+	"        -j <name>               integrate <file> into jffs2 data when writing an image\n");
+	if (mtd_fixtrx) {
+	    fprintf(stderr,
+	"        -o offset               offset of the image header in the partition(for fixtrx)\n");
+    }
+	fprintf(stderr,
 #ifdef FIS_SUPPORT
 	"        -F <part>[:<size>[:<entrypoint>]][,<part>...]\n"
 	"                                alter the fis partition table to create new partitions replacing\n"
@@ -646,18 +565,22 @@ int main (int argc, char **argv)
 	force = 0;
 	buflen = 0;
 	quiet = 0;
+  no_erase = 0;
 
 	while ((ch = getopt(argc, argv,
 #ifdef FIS_SUPPORT
 			"F:"
 #endif
-			"frqe:d:j:o:")) != -1)
+			"frnqe:d:j:o:")) != -1)
 		switch (ch) {
 			case 'f':
 				force = 1;
 				break;
 			case 'r':
 				boot = 1;
+				break;
+			case 'n':
+				no_erase = 1;
 				break;
 			case 'j':
 				jffs2file = optarg;
@@ -677,6 +600,10 @@ int main (int argc, char **argv)
 				jffs2dir = optarg;
 				break;
 			case 'o':
+				if (!mtd_fixtrx) {
+					fprintf(stderr, "-o: is not available on this platform\n");
+					usage();
+				}
 				errno = 0;
 				offset = strtoul(optarg, 0, 0);
 				if (errno) {
@@ -708,7 +635,7 @@ int main (int argc, char **argv)
 	} else if ((strcmp(argv[0], "erase") == 0) && (argc == 2)) {
 		cmd = CMD_ERASE;
 		device = argv[1];
-	} else if ((strcmp(argv[0], "fixtrx") == 0) && (argc == 2)) {
+	} else if (((strcmp(argv[0], "fixtrx") == 0) && (argc == 2)) && mtd_fixtrx) {
 		cmd = CMD_FIXTRX;
 		device = argv[1];
 	} else if ((strcmp(argv[0], "write") == 0) && (argc == 3)) {
@@ -784,7 +711,9 @@ int main (int argc, char **argv)
 			mtd_refresh(device);
 			break;
 		case CMD_FIXTRX:
-			mtd_fixtrx(device, offset);
+		    if (mtd_fixtrx) {
+			    mtd_fixtrx(device, offset);
+            }
 			break;
 	}
 

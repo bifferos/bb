@@ -3,7 +3,7 @@
 # Copyright (C) 2010 Vertical Communications
 
 mount() {
-	/bin/busybox mount "$@"
+	/bin/busybox mount -o noatime "$@"
 }
 
 boot_hook_splice_start() {
@@ -78,10 +78,10 @@ find_mtd_part() {
 }
 
 jffs2_ready () {
-    mtdpart="$(find_mtd_part rootfs_data)"
-    [ -z "$mtdpart" ] && return 1
-    magic=$(hexdump $mtdpart -n 4 -e '4/1 "%02x"')
-    [ "$magic" != "deadc0de" ]
+	mtdpart="$(find_mtd_part rootfs_data)"
+	[ -z "$mtdpart" ] && return 1
+	magic=$(hexdump $mtdpart -n 4 -e '4/1 "%02x"')
+	[ "$magic" != "deadc0de" ]
 }
 
 dupe() { # <new_root> <old_root>
@@ -125,7 +125,9 @@ pivot() { # <new_root> <old_root>
 fopivot() { # <rw_root> <ro_root> <dupe?>
 	root=$1
 	{
-		if grep -q mini_fo /proc/filesystems; then
+		if grep -q overlay /proc/filesystems; then
+			mount -t overlayfs -olowerdir=/,upperdir=$1 "overlayfs:$1" /mnt && root=/mnt
+		elif grep -q mini_fo /proc/filesystems; then
 			mount -t mini_fo -o base=/,sto=$1 "mini_fo:$1" /mnt 2>&- && root=/mnt
 		else
 			mount --bind / /mnt
@@ -142,7 +144,7 @@ fopivot() { # <rw_root> <ro_root> <dupe?>
 
 ramoverlay() {
 	mkdir -p /tmp/root
-	mount -t tmpfs root /tmp/root
+	mount -t tmpfs -o mode=0755 root /tmp/root
 	fopivot /tmp/root /rom 1
 }
 

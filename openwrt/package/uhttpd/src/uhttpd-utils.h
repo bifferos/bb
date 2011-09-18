@@ -21,8 +21,11 @@
 #include <stdarg.h>
 #include <fcntl.h>
 #include <pwd.h>
-#include <shadow.h>
 #include <sys/stat.h>
+
+#ifdef HAVE_SHADOW
+#include <shadow.h>
+#endif
 
 #define min(x, y) (((x) < (y)) ? (x) : (y))
 #define max(x, y) (((x) > (y)) ? (x) : (y))
@@ -49,6 +52,7 @@ struct path_info {
 	char *name;
 	char *info;
 	char *query;
+	int redirected;
 	struct stat stat;
 };
 

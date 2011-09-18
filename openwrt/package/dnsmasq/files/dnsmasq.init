@@ -78,6 +78,7 @@ dnsmasq() {
 	append_bool "$cfg" enable_tftp "--enable-tftp"
 	append_bool "$cfg" nonwildcard "-z"
 
+	append_parm "$cfg" dhcpscript "-6"
 	append_parm "$cfg" cachesize "-c"
 	append_parm "$cfg" dnsforwardmax "-0"
 	append_parm "$cfg" port "-p"
@@ -99,10 +100,10 @@ dnsmasq() {
 	config_get DOMAIN "$cfg" domain
 
 	config_get_bool readethers "$cfg" readethers
-	[ "$readethers" = "1" ] && [ -e "/etc/ethers" ] || touch /etc/ethers
+	[ "$readethers" = "1" -a \! -e "/etc/ethers" ] && touch /etc/ethers
 
 	config_get leasefile $cfg leasefile
-	[ -n "$leasefile" ] && ([ -e "$leasefile" ] || touch "$leasefile")
+	[ -n "$leasefile" -a \! -e "$leasefile" ] && touch "$leasefile"
 	config_get_bool cachelocal "$cfg" cachelocal 1
 
 	config_get hostsfile "$cfg" dhcphostsfile
@@ -205,20 +206,19 @@ dhcp_vendorclass_add() {
 dhcp_host_add() {
 	local cfg="$1"
 
-	config_get name "$cfg" name
-
 	config_get networkid "$cfg" networkid
 	[ -n "$networkid" ] && dhcp_option_add "$cfg" "$networkid"
 
+	config_get name "$cfg" name
 	config_get ip "$cfg" ip
-	[ -n "$ip" ] || return 0
+	[ -n "$ip" ] || [ -n "$name" ] || return 0
 
 	macs=""
 	config_get mac "$cfg" mac
 	for m in $mac; do append macs "$m" ","; done
 	[ -n "$macs" ] || return 0
 
-	append args "--dhcp-host=$macs,${networkid:+net:$networkid,}$ip${name:+,$name}"
+	append args "--dhcp-host=$macs${networkid:+,net:$networkid}${ip:+,$ip}${name:+,$name}"
 }
 
 dhcp_mac_add() {
@@ -271,7 +271,7 @@ dhcp_add() {
 		DNS_SERVERS="$DNS_SERVERS $dnsserver"
 	}
 
-	append_bool "$cfg" ignore "-2 '$ifname'" && return 0
+	append_bool "$cfg" ignore "-2 $ifname" && return 0
 
 	config_get proto "$net" proto
 	[ static = "$proto" ] || return 0
@@ -283,7 +283,12 @@ dhcp_add() {
 	#check for an already active dhcp server on the interface, unless 'force' is set
 	config_get_bool force "$cfg" force 0
 	[ $force -gt 0 ] || {
-		udhcpc -n -q -s /bin/true -t 1 -i $ifname >&- && return 0
+		udhcpc -n -q -s /bin/true -t 1 -i $ifname >&- && {
+			logger -t dnsmasq \
+				"found already running DHCP-server on interface '$ifname'" \
+				"refusing to start, use 'option force 1' to override"
+			return 0
+		}
 	}
 
 	config_get start "$cfg" start
@@ -295,6 +300,7 @@ dhcp_add() {
 	leasetime="${leasetime:-12h}"
 	start="$(dhcp_calc "${start:-100}")"
 	limit="${limit:-150}"
+	[ "$limit" -gt 0 ] && limit=$((limit-1))
 	eval "$(ipcalc.sh $ipaddr $netmask $start $limit)"
 	if [ "$dynamicdhcp" = "0" ]; then END="static"; fi
 	append args "--dhcp-range=$networkid,$START,$END,$NETMASK,$leasetime${options:+ $options}"
@@ -392,6 +398,6 @@ stop() {
 		rm -f /tmp/resolv.conf
 		ln -s /tmp/resolv.conf.auto /tmp/resolv.conf
 	}
-	killall dnsmasq
+	service_kill dnsmasq /var/run/dnsmasq.pid
 	return 0
 }

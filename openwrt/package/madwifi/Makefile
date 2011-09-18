@@ -73,26 +73,23 @@ endif
 ifeq ($(ARCH),i686)
   HAL_TARGET:=i386-elf
 endif
-ifeq ($(BOARD),ixp4xx)
-  HAL_TARGET:=xscale-be-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
+ifeq ($(ARCH),armeb)
+  HAL_TARGET:=xscale-be-elfgnueabi
 endif
-ifeq ($(BOARD),iop32x)
-  HAL_TARGET:=xscale-le-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
-endif
-ifeq ($(BOARD),kirkwood)
-  HAL_TARGET:=xscale-le-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
-endif
-ifeq ($(BOARD),orion)
-  HAL_TARGET:=xscale-le-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
-endif
-ifeq ($(BOARD),cns3xxx)
-  HAL_TARGET:=arm11-le-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
+ifeq ($(ARCH),arm)
+  HAL_TARGET:=xscale-le-elfgnueabi
+  ifeq ($(BOARD),cns21xx)
+    HAL_TARGET:=armv4-le-elfgnueabi
+  endif
+  ifeq ($(BOARD),cns3xxx)
+    HAL_TARGET:=arm11-le-elfgnueabi
+  endif
+  ifeq ($(BOARD),gemini)
+    HAL_TARGET:=armv4-le-elfgnueabi
+  endif
 endif
 ifeq ($(ARCH),powerpc)
   HAL_TARGET:=powerpc-be-elf
-endif
-ifeq ($(BOARD),gemini)
-  HAL_TARGET:=armv4-le-elf$(if $(CONFIG_EABI_SUPPORT),gnueabi)
 endif
 ifneq ($(CONFIG_TARGET_atheros),)
   HAL_TARGET:=wisoc
@@ -165,7 +162,7 @@ define KernelPackage/madwifi
   TITLE:=Driver for Atheros wireless chipsets
   URL:=http://madwifi-project.org/
   MAINTAINER:=Felix Fietkau <nbd@openwrt.org>
-  DEPENDS:=+wireless-tools @PCI_SUPPORT @(!(TARGET_avr32||TARGET_cobalt||TARGET_ep93xx||TARGET_etrax||TARGET_octeon||TARGET_pxcab||TARGET_sibyte)||BROKEN)
+  DEPENDS:=+wireless-tools @PCI_SUPPORT @(!(TARGET_avr32||TARGET_cobalt||TARGET_ep93xx||TARGET_etrax||TARGET_octeon||TARGET_pxcab||TARGET_sibyte||LINUX_3_1)||BROKEN) +@DRIVER_WEXT_SUPPORT
   FILES:=$(MADWIFI_FILES)
   AUTOLOAD:=$(call AutoLoad,50,$(MADWIFI_AUTOLOAD))
   MENU:=1

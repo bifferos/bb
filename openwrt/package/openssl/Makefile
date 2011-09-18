@@ -8,7 +8,7 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=openssl
-PKG_VERSION:=0.9.8o
+PKG_VERSION:=1.0.0d
 PKG_RELEASE:=1
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.gz
@@ -16,7 +16,7 @@ PKG_SOURCE_URL:=http://www.openssl.org/source/ \
 	ftp://ftp.funet.fi/pub/crypt/cryptography/libs/openssl/source/ \
 	ftp://ftp.webmonster.de/pub/openssl/source/ \
 	ftp://ftp.sunet.se/pub/security/tools/net/openssl/source/
-PKG_MD5SUM:=63ddc5116488985e820075e65fbe6aa4
+PKG_MD5SUM:=40b6ea380cc8a5bf9734c2f8bf7e701e
 
 PKG_BUILD_DEPENDS:=ocf-crypto-headers
 PKG_CONFIG_DEPENDS:=CONFIG_OPENSSL_ENGINE
@@ -77,7 +77,7 @@ OPENSSL_NO_CIPHERS:= no-idea no-md2 no-mdc2 no-rc5 no-sha0 no-smime \
 OPENSSL_OPTIONS:= shared no-ec no-err no-hw no-threads zlib-dynamic no-sse2
 
 ifdef CONFIG_OPENSSL_ENGINE
-  OPENSSL_OPTIONS += --with-cryptodev
+  OPENSSL_OPTIONS += -DHAVE_CRYPTODEV
 else
   OPENSSL_OPTIONS += no-engines
 endif

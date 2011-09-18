@@ -17,11 +17,14 @@ if [ "$ACTION" = ifup ]; then
 		config_get wandev "$cfg" wan_device "$(find_6in4_wanif)"
 		[ "$wandev" = "$DEVICE" ] || return 0
 
-		local oldip
 		local wanip=$(find_6in4_wanip "$wandev")
-		config_get oldip "$cfg" ipaddr
 
-		[ -n "$wanip" ] && [ "$oldip" != "$wanip" ] && {
+		[ -n "$wanip" ] && {
+			lsmod | grep -q ^sit || {
+				logger -t 6in4-update "Tunneling driver not loaded yet, deferring action"
+				exit 0
+			}
+
 			local tunnelid
 			config_get tunnelid "$cfg" tunnelid
 
@@ -31,13 +34,32 @@ if [ "$ACTION" = ifup ]; then
 			local password
 			config_get password "$cfg" password
 
+			uci_set_state network "$cfg" ipaddr "$wanip"
+
 			[ -n "$tunnelid" ] && [ -n "$username" ] && [ -n "$password" ] && {
 				[ "${#password}" == 32 -a -z "${password//[a-f0-9]/}" ] || {
 					password="$(echo -n "$password" | md5sum)"; password="${password%% *}"
 				}
-				uci_set_state network "$cfg" ipaddr "$wanip"
 
-				( wget -qO/dev/null "http://ipv4.tunnelbroker.net/ipv4_end.php?ipv4b=AUTO&user_id=$username&pass=$password&tunnel_id=$tunnelid" && ifup "$cfg" )&
+				(
+					local url="http://ipv4.tunnelbroker.net/ipv4_end.php?ipv4b=AUTO&user_id=$username&pass=$password&tunnel_id=$tunnelid"
+					local try=0
+					local max=3
+
+					while [ $((++try)) -le $max ]; do
+						wget -qO/dev/null "$url" 2>/dev/null && {
+							logger -t 6in4-update "Updated tunnel #$tunnelid endpoint to $wanip"
+							ifup "$cfg"
+							break
+						} || {
+							logger -t 6in4-update "Try $try/$max failed, retrying"
+							sleep 1
+						}
+					done
+				)&
+			} || {
+				logger -t 6in4-update "Re-establishing tunnel due to change on $INTERFACE ($DEVICE)"
+				ifup "$cfg" &
 			}
 		}
 	}

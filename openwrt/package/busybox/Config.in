@@ -1,5 +1,5 @@
-menu "Configuration"
-	depends on PACKAGE_busybox
+
+if PACKAGE_busybox
 
 config BUSYBOX_CONFIG_NOMMU
 	bool
@@ -19,6 +19,11 @@ config BUSYBOX_CONFIG_HUSH
 	default y if NOMMU
 	default n if !NOMMU
 
+config BUSYBOX_USE_LIBRPC
+	bool
+	depends USE_UCLIBC
+	default y if BUSYBOX_CONFIG_FEATURE_HAVE_RPC
+
 source "package/busybox/config/Config.in"
 
-endmenu
+endif

@@ -34,6 +34,10 @@
 #include "switch-core.h"
 #include "etc53xx.h"
 
+#ifdef CONFIG_BCM47XX
+#include <nvram.h>
+#endif
+
 #define DRIVER_NAME		"bcm53xx"
 #define DRIVER_VERSION		"0.02"
 #define PFX			"roboswitch: "
@@ -62,14 +66,6 @@
 /* Private et.o ioctls */
 #define SIOCGETCPHYRD           (SIOCDEVPRIVATE + 9)
 #define SIOCSETCPHYWR           (SIOCDEVPRIVATE + 10)
-
-/* Only available on brcm47xx */
-#ifdef BROADCOM
-extern char *nvram_get(const char *name);
-#define getvar(str) (nvram_get(str)?:"")
-#else
-#define getvar(str) ""
-#endif
 
 /* Data structure for a Roboswitch device. */
 struct robo_switch {
@@ -258,6 +254,9 @@ static int robo_switch_enable(void)
 {
 	unsigned int i, last_port;
 	u16 val;
+#ifdef CONFIG_BCM47XX
+	char buf[20];
+#endif
 
 	val = robo_read16(ROBO_CTRL_PAGE, ROBO_SWITCH_MODE);
 	if (!(val & (1 << 1))) {
@@ -278,10 +277,13 @@ static int robo_switch_enable(void)
 			robo_write16(ROBO_CTRL_PAGE, i, 0);
 	}
 
+#ifdef CONFIG_BCM47XX
 	/* WAN port LED, except for Netgear WGT634U */
-	if (strcmp(getvar("nvram_type"), "cfe") != 0)
-		robo_write16(ROBO_CTRL_PAGE, 0x16, 0x1F);
-
+	if (nvram_getenv("nvram_type", buf, sizeof(buf)) >= 0) {
+		if (strcmp(buf, "cfe") != 0)
+			robo_write16(ROBO_CTRL_PAGE, 0x16, 0x1F);
+	}
+#endif
 	return 0;
 }
 
@@ -301,7 +303,7 @@ static int robo_probe(char *devname)
 {
 	__u32 phyid;
 	unsigned int i;
-	int err;
+	int err = 1;
 
 	printk(KERN_INFO PFX "Probing device %s: ", devname);
 	strcpy(robo.ifr.ifr_name, devname);
@@ -331,7 +333,7 @@ static int robo_probe(char *devname)
 		    (mii->phy_id != ROBO_PHY_ADDR_BCM63XX) &&
 		    (mii->phy_id != ROBO_PHY_ADDR_TG3)) {
 			printk("Invalid phy address (%d)\n", mii->phy_id);
-			return 1;
+			goto done;
 		}
 		robo.use_et = 0;
 		/* The robo has a fixed PHY address that is different from the
@@ -344,7 +346,7 @@ static int robo_probe(char *devname)
 
 	if (phyid == 0xffffffff || phyid == 0x55210022) {
 		printk("No Robo switch in managed mode found, phy_id = 0x%08x\n", phyid);
-		return 1;
+		goto done;
 	}
 
 	/* Get the device ID */
@@ -361,11 +363,18 @@ static int robo_probe(char *devname)
 	robo_switch_reset();
 	err = robo_switch_enable();
 	if (err)
-		return err;
+		goto done;
+	err = 0;
 
 	printk("found a 5%s%x!%s\n", robo.devid & 0xff00 ? "" : "3", robo.devid,
 		robo.is_5350 ? " It's a 5350." : "");
-	return 0;
+
+done:
+	if (err) {
+		dev_put(robo.dev);
+		robo.dev = NULL;
+	}
+	return err;
 }
 
 
@@ -610,6 +619,8 @@ static int __init robo_init(void)
 static void __exit robo_exit(void)
 {
 	switch_unregister_driver(DRIVER_NAME);
+	if (robo.dev)
+		dev_put(robo.dev);
 	kfree(robo.device);
 }
 

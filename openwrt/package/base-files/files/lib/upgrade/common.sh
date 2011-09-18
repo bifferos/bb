@@ -130,6 +130,10 @@ get_magic_word() {
 	get_image "$@" | dd bs=2 count=1 2>/dev/null | hexdump -v -n 2 -e '1/1 "%02x"'
 }
 
+get_magic_long() {
+	get_image "$@" | dd bs=4 count=1 2>/dev/null | hexdump -v -n 4 -e '1/1 "%02x"'
+}
+
 refresh_mtd_partitions() {
 	mtd refresh rootfs
 }
@@ -178,7 +182,7 @@ do_upgrade() {
 	[ -n "$DELAY" ] && sleep "$DELAY"
 	ask_bool 1 "Reboot" && {
 		v "Rebooting system..."
-		reboot
+		reboot -f
 		sleep 5
 		echo b 2>/dev/null >/proc/sysrq-trigger
 	}

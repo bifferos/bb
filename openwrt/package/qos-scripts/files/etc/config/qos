@@ -3,18 +3,11 @@
 # INTERFACES:
 config interface wan
 	option classgroup  "Default"
-	option enabled      1
-	option overhead     1
+	option enabled      0
 	option upload       128
 	option download     1024
 
 # RULES:
-config classify
-	option target       "Bulk"
-	option layer7       "edonkey"
-config classify
-	option target       "Bulk"
-	option layer7       "bittorrent"
 config classify
 	option target       "Priority"
 	option ports        "22,53"

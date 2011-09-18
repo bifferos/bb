@@ -1,11 +1,11 @@
-# Copyright (C) 2009-2010 OpenWrt.org
+# Copyright (C) 2009-2011 OpenWrt.org
 # All rights reserved.
 
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=mountd
 PKG_VERSION:=0.1
-PKG_RELEASE:=2
+PKG_RELEASE:=4
 
 PKG_SOURCE:=$(PKG_NAME)-$(PKG_VERSION).tar.bz2
 PKG_SOURCE_URL:=http://mirror2.openwrt.org/sources
@@ -25,6 +25,10 @@ define Package/mountd/description
   openwrt automount daemon
 endef
 
+define Package/mountd/conffiles
+/etc/config/mountd
+endef
+
 define Build/Compile
 	$(TARGET_CONFIGURE_OPTS) \
 		CFLAGS="$(TARGET_CFLAGS) -I$(STAGING_DIR)/usr/include -I$(PKG_BUILD_DIR)" \
@@ -40,4 +44,3 @@ define Package/mountd/install
 endef
 
 $(eval $(call BuildPackage,mountd))
-

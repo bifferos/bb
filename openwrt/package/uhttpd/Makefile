@@ -1,5 +1,5 @@
 #
-# Copyright (C) 2010 Jo-Philipp Wich <xm@subsignal.org>
+# Copyright (C) 2010-2011 Jo-Philipp Wich <xm@subsignal.org>
 #
 # This is free software, licensed under the GNU General Public License v2.
 # See /LICENSE for more information.
@@ -8,16 +8,21 @@
 include $(TOPDIR)/rules.mk
 
 PKG_NAME:=uhttpd
-PKG_RELEASE:=18
+PKG_RELEASE:=26
 
 PKG_BUILD_DIR := $(BUILD_DIR)/$(PKG_NAME)
-PKG_BUILD_DEPENDS := libcyassl liblua
+PKG_CONFIG_DEPENDS := \
+	CONFIG_PACKAGE_uhttpd-mod-lua \
+	CONFIG_PACKAGE_uhttpd-mod-tls \
+	CONFIG_PACKAGE_uhttpd-mod-tls_cyassl \
+	CONFIG_PACKAGE_uhttpd-mod-tls_openssl
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/uhttpd/default
   SECTION:=net
   CATEGORY:=Network
+  SUBMENU:=Web Servers/Proxies
   TITLE:=uHTTPd - tiny, single threaded HTTP server
   MAINTAINER:=Jo-Philipp Wich <xm@subsignal.org>
 endef
@@ -37,12 +42,38 @@ endef
 define Package/uhttpd-mod-tls
   $(Package/uhttpd/default)
   TITLE+= (TLS plugin)
-  DEPENDS:=uhttpd +libcyassl
+  DEPENDS:=uhttpd +PACKAGE_uhttpd-mod-tls_cyassl:libcyassl +PACKAGE_uhttpd-mod-tls_openssl:libopenssl
 endef
 
 define Package/uhttpd-mod-tls/description
  The TLS plugin adds HTTPS support to uHTTPd.
 endef
+
+define Package/uhttpd-mod-tls/config
+        choice
+                depends on PACKAGE_uhttpd-mod-tls
+                prompt "TLS Provider"
+                default PACKAGE_uhttpd-mod-tls_cyassl
+
+                config PACKAGE_uhttpd-mod-tls_cyassl
+                        bool "CyaSSL"
+
+                config PACKAGE_uhttpd-mod-tls_openssl
+                        bool "OpenSSL"
+        endchoice
+endef
+
+UHTTPD_TLS:=
+TLS_CFLAGS:=
+
+ifneq ($(CONFIG_PACKAGE_uhttpd-mod-tls_cyassl),)
+  UHTTPD_TLS:=cyassl
+  TLS_CFLAGS:=-I$(STAGING_DIR)/usr/include/cyassl
+endif
+
+ifneq ($(CONFIG_PACKAGE_uhttpd-mod-tls_openssl),)
+  UHTTPD_TLS:=openssl
+endif
 
 
 define Package/uhttpd-mod-lua
@@ -56,10 +87,12 @@ define Package/uhttpd-mod-lua/description
 endef
 
 
-# hack to use CyASSL headers
-TARGET_CFLAGS += -I$(firstword $(wildcard $(BUILD_DIR)/cyassl-*/include))
-TARGET_LDFLAGS += -lm
-MAKE_VARS += FPIC="$(FPIC)"
+TARGET_CFLAGS += $(TLS_CFLAGS)
+MAKE_VARS += \
+	FPIC="$(FPIC)" \
+	LUA_SUPPORT="$(if $(CONFIG_PACKAGE_uhttpd-mod-lua),1)" \
+	TLS_SUPPORT="$(if $(CONFIG_PACKAGE_uhttpd-mod-tls),1)" \
+	UHTTPD_TLS="$(UHTTPD_TLS)"
 
 define Build/Prepare
 	mkdir -p $(PKG_BUILD_DIR)
@@ -68,6 +101,8 @@ endef
 
 define Package/uhttpd/conffiles
 /etc/config/uhttpd
+/etc/uhttpd.crt
+/etc/uhttpd.key
 endef
 
 define Package/uhttpd/install
