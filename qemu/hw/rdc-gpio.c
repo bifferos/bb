@@ -87,7 +87,8 @@ static void panel_command(panel_connection_t* h, const char* command)
 {
 	if (send(h->socket, command, strlen(command), 0) == -1) {
 		perror(PANEL_NAME "send");
-		exit(1);
+		close(h->socket);
+		h->socket = -1;  /* act like we never connected */
 	}
 }
 
@@ -105,7 +106,9 @@ static int panel_getpins(panel_connection_t* h, char* status, size_t slen)
 	efds = h->fds;
 
 	if (select(h->socket + 1, &rfds, NULL, &efds, NULL) == -1) {
-		//perror(PANEL_NAME "select");
+		perror(PANEL_NAME "select");
+		close(h->socket);
+		h->socket = -1;  /* act like we never connected */
 		return 0;  // syscall?
 	}
 
