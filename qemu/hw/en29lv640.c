@@ -9,6 +9,7 @@
 #include "hw.h"
 #include "md5.h"
 #include "sysemu.h"
+#include "en29lv640.h"
 
 
 #define FLASH_SIZE 0x800000
@@ -116,8 +117,24 @@ static void flash_load_image(const char* fw_name)
 	}
     }
     close(fd);
+}
+
+
+void en29lv640_save_image(void)
+{
+    int fd = open(firmware_name, O_RDWR | O_BINARY);    
+    int towrite = FLASH_DEV_LEN - 0x6000;
+    int written = write(fd, &g_backing[0x6000], towrite);
+    if (towrite == written)
+    {
+      printf("Writing out flash to %s\n", firmware_name);
+    }
+    else
+    {
+      printf("Error writing to flash file %s (only %d bytes written)\n", firmware_name, written);
+    }
     
-    return;
+    close(fd);
 }
 
 

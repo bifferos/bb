@@ -31,6 +31,7 @@
 #include "hw/usb.h"
 #include "hw/baum.h"
 #include "hw/msmouse.h"
+#include "hw/en29lv640.h"
 #include "qemu-objects.h"
 
 #include <unistd.h>
@@ -354,8 +355,8 @@ static int mux_proc_byte(CharDriverState *chr, MuxDriver *d, int ch)
         case 'h':
             mux_print_help(chr);
             break;
-        case 'x':
-            {
+        case 'x': {
+                 en29lv640_save_image();
                  const char *term =  "QEMU: Terminated\n\r";
                  chr->chr_write(chr,(uint8_t *)term,strlen(term));
                  exit(0);

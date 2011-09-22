@@ -1283,6 +1283,7 @@ void qemu_system_reset_request(void)
     }
     cpu_stop_current();
     qemu_notify_event();
+
 }
 
 void qemu_system_killed(int signal, pid_t pid)
