@@ -109,6 +109,7 @@ CharDriverState *qemu_chr_find(const char *name);
 CharDriverState *qemu_chr_open_eventfd(int eventfd);
 
 extern int term_escape_char;
+extern int discard_flash;
 
 /* memory chardev */
 void qemu_chr_init_mem(CharDriverState *chr);

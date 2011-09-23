@@ -23,6 +23,10 @@ run:
 		-L qemu/pc-bios/optionrom  \
 		-net nic,model=r6040,macaddr=52:54:00:12:34:57   \
 		-net user
+		
+		
+# Add option for discarding the flash if you don't want to save it each time
+#		-discard-flash
 
 # Add options for usb bus and devices if needed
 #		-usb  -usbdevice disk:usbdisk.img

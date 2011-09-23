@@ -356,7 +356,7 @@ static int mux_proc_byte(CharDriverState *chr, MuxDriver *d, int ch)
             mux_print_help(chr);
             break;
         case 'x': {
-                 en29lv640_save_image();
+                 if (!discard_flash) en29lv640_save_image();
                  const char *term =  "QEMU: Terminated\n\r";
                  chr->chr_write(chr,(uint8_t *)term,strlen(term));
                  exit(0);

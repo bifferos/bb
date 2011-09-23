@@ -2097,6 +2097,16 @@ STEXI
 Set the kmax value to @var{n} .  Default is 0x10.
 ETEXI
 
+DEF("discard-flash", 0, QEMU_OPTION_discard_flash, \
+    "-discard-flash     Don't save the flash image when quitting\n", QEMU_ARCH_ALL)
+STEXI
+@item -discard-flash
+@findex -discard-flash
+The default setting is to save changes to the flash memory.
+Supplying this option discards it.
+ETEXI
+
+
 DEF("enable-kvm", 0, QEMU_OPTION_enable_kvm, \
     "-enable-kvm     enable KVM full virtualization support\n", QEMU_ARCH_ALL)
 STEXI

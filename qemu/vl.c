@@ -178,6 +178,7 @@ const char *bios_name = NULL;
 // Bifferboard values
 const char *firmware_name = NULL;
 uint16_t kmax_size = DEFAULT_KMAX;
+int discard_flash = 0;
 
 enum vga_retrace_method vga_retrace_method = VGA_RETRACE_DUMB;
 DisplayType display_type = DT_DEFAULT;
@@ -2500,6 +2501,9 @@ int main(int argc, char **argv, char **envp)
                 kmax_size = value & 0xffff;
                 break;
             }
+            case QEMU_OPTION_discard_flash:
+                discard_flash = 1;
+                break;
             case QEMU_OPTION_singlestep:
                 singlestep = 1;
                 break;
