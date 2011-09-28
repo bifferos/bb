@@ -13,3 +13,11 @@
 /feeds.conf
 /files
 /package/openwrt-packages
+/scripts/config/*.o
+/scripts/config/conf
+/scripts/config/mconf
+/scripts/config/lex.zconf.c
+/scripts/config/zconf.hash.c
+/scripts/config/zconf.tab.c
+/scripts/config/lxdialog/*.o
+/scripts/config/lxdialog/lxdialog

@@ -1,1 +1,3 @@
 *~
+/tools/*.pyc
+/qemu-firmware.img
