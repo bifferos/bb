@@ -368,19 +368,19 @@ unsigned short g_CFI[] = {
         0x27, // Vcc min (write/erase)
         0x36, // Vcc max (write/erase)
         0, 0, // Vpp Min/Max
-        3, 0, 0xa, 0, 5, 0, 2, 0,  // timeouts
+        4, 0, 0xa, 0, 5, 0, 4, 0,  // timeouts
         0x17, // device size (2^N)
-        1, 0, // interface description
+        2, 0, // interface description
         0, 0, // max byte in multi-byte write (0== not supported)
-        1, // number of erase block regions
-        0x7f, 0, 0, 1, // erase block region 1 info.
-        0,0,0,0,  // erase block region 2 info
+        2, // number of erase block regions
+        7, 0, 0x20, 0, // erase block region 1 info.
+        0x7e,0,0,1,  // erase block region 2 info
         0,0,0,0,  // region 3
         0,0,0,0,  // region 4
         0,0,0,   // padding to 0x40h.
         0x50, 0x52, 0x49,
-        0x31, 0x33,
-        4, 2, 4, 1, 4, 0, 0, 0, 0xa5, 0xb5, 0xff
+        0x31, 0x31,
+        0, 2, 4, 1, 4, 0, 0, 0, 0xa5, 0xc5, 2
 };
 
 
@@ -389,6 +389,18 @@ static uint32_t flash_read_width(void *opaque, target_phys_addr_t addr, int widt
   uint32_t ret;
   unsigned char* tmp = g_backing;
    
+  if (g_state == CYCLE_AUTOSELECT)
+  {
+    if (addr == 0x000)
+      return 0x7f;
+    else if ((addr == 0x100) || (addr == 0x200))
+      return 0x1c;
+    else if (((addr & 0x0ff) == 0x01) || ((addr & 0x0ff) == 0x02))
+      return 0x22cb;
+    else
+      return 0;
+  }
+
   if (g_state == CYCLE_CFI)
   {
     if (addr<sizeof(g_CFI))

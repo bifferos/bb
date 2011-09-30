@@ -3541,7 +3541,7 @@ echo "QEMU_INCLUDES+=$includes" >> $config_target_mak
 done # for target in $targets
 
 # build tree in object directory in case the source is not in the current directory
-DIRS="tests tests/cris slirp audio block net pc-bios/optionrom"
+DIRS="slirp audio block net pc-bios/optionrom"
 DIRS="$DIRS pc-bios/spapr-rtas"
 DIRS="$DIRS roms/seabios roms/vgabios"
 DIRS="$DIRS fsdev ui"
@@ -3583,20 +3583,6 @@ for hwlib in 32 64; do
   mkdir -p $d/9pfs
   echo "QEMU_CFLAGS+=-DTARGET_PHYS_ADDR_BITS=$hwlib" > $d/config.mak
 done
-
-if [ "$source_path" != `pwd` ]; then
-    # out of tree build
-    mkdir -p libcacard
-    rm -f libcacard/Makefile
-    symlink "$source_path/libcacard/Makefile" libcacard/Makefile
-fi
-
-d=libuser
-mkdir -p $d
-symlink $source_path/Makefile.user $d/Makefile
-if test "$static" = "no" -a "$user_pie" = "yes" ; then
-  echo "QEMU_CFLAGS+=-fpie" > $d/config.mak
-fi
 
 if test "$docs" = "yes" ; then
   mkdir -p QMP

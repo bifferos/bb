@@ -212,8 +212,7 @@ clean:
 	rm -f trace-dtrace.dtrace trace-dtrace.dtrace-timestamp
 	rm -f trace-dtrace.h trace-dtrace.h-timestamp
 	rm -rf $(qapi-dir)
-	$(MAKE) -C tests clean
-	for d in $(ALL_SUBDIRS) $(QEMULIBS) libcacard; do \
+	for d in $(ALL_SUBDIRS) $(QEMULIBS); do \
 	if test -d $$d; then $(MAKE) -C $$d $@ || exit 1; fi; \
 	rm -f $$d/qemu-options.def; \
         done

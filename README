@@ -5,7 +5,7 @@ Instructions for use
 To build Bifferboard firmware and emulator type 'make'.
 
 To run the image under the emulator type 'make run'.
-CTRL-A, CTRL-X quits the emulator.
+CTRL-A, X quits the emulator.
 
 Edit the Makefile to suit how you want to organise your virtual
 network.  See Qemu documentation at http://qemu.weilnetz.de/qemu-doc.html

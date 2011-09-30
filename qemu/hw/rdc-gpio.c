@@ -99,17 +99,41 @@ static int panel_getpins(panel_connection_t* h, char* status, size_t slen)
 	char str[100];
 	fd_set rfds, efds;
 	int t;
+	int select_res = 0;
+	
+	if (h->socket == -1) return 0;
 	// Wait for a response from peripheral, assume it arrives all together
 	// (likely since it's only a few bytes long)
 
 	rfds = h->fds;
 	efds = h->fds;
 
-	if (select(h->socket + 1, &rfds, NULL, &efds, NULL) == -1) {
+	while (1)
+	{
+          select_res = select(h->socket + 1, &rfds, NULL, &efds, NULL);
+          if (select_res == -1)
+          {
+	    if (errno == EINTR)
+	    {
+	        // try again, syscall
+	    }
+	    else
+	    {
 		perror(PANEL_NAME "select");
 		close(h->socket);
-		h->socket = -1;  /* act like we never connected */
-		return 0;  // syscall?
+		h->socket = -1;  // act like we never connected 
+		return 0;  // give up
+            }
+          }
+          else if (select_res == 0)
+          {
+            // timeout, wait a bit longer for data
+          }
+          else
+          {
+            // Should be one or more descriptors signalled.
+            break;
+          }
 	}
 
 	strcpy(status,"");
@@ -313,7 +337,8 @@ void rdc_gpio_pci_init(PCIBus *bus)
   }
 
   /* set all connected pins as weak pull-up (X is default) */
-  for (i=0;i<PANEL_PINS;i++) {
+  for (i=0;i<PANEL_PINS;i++) 
+  {
     panel_write(&s->panel, i, 'P');
     /* remember the state we set then only send changes */
     s->panel.last[i] = 'P';
@@ -321,6 +346,7 @@ void rdc_gpio_pci_init(PCIBus *bus)
   
   memset(s->cfg_state, 0xff, sizeof(s->cfg_state));
   
+  // Southbridge settings
   s->cfg_state[0] = 0xf3;
   s->cfg_state[1] = 0x17;
   s->cfg_state[2] = 0x30;
