@@ -64,8 +64,8 @@ static void write_config_block(uint8_t* start)
   cfg->boottype = 3;
   cfg->boottype = 1;  // linux
   cfg->loadaddress = 0x400000;
-  //strcpy( cfg->cmndline, "console=uart,io,0x3f8 rootfstype=squashfs,jffs2 init=/etc/preinit");
-  strcpy( cfg->cmndline, "");
+  strcpy( cfg->cmndline, "console=uart,io,0x3f8 rootfstype=squashfs,jffs2 init=/etc/preinit");
+  //strcpy( cfg->cmndline, "");
   cfg->kernelmax = kmax_size;
   cfg->myip = 0x00;
   cfg->serverip = 0x0202000a;
