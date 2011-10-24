@@ -3,8 +3,7 @@
 .PHONY: all run vde_start vde_stop qemu_debug image ser_upload eth_upload
 
 QEMU_BIN = ./qemu/i386-softmmu/qemu
-SEABIOS_BIN = seabios/out/bios.bin
-OPENWRT_KERNEL = openwrt/bin/rdc/openwrt-rdc.bzImage
+BIOS_BIN = ./bios.bin
 OPENWRT_ROOTFS = openwrt/build_dir/linux-rdc/root.jffs2-64k
 OPENWRT_FIRMWARE = openwrt/bin/rdc/openwrt-rdc-jffs2-64k-bifferboard.img
 QEMU_FIRMWARE = qemu-firmware.img
@@ -23,26 +22,32 @@ $(QEMU_BIN):
 $(SEABIOS_BIN):
 	make -C seabios
 
-$(OPENWRT_KERNEL) $(OPENWRT_ROOTFS) $(OPENWRT_FIRMWARE):
+$(OPENWRT_ROOTFS) $(OPENWRT_FIRMWARE):
 	make -C openwrt
 
 # no dependencies, to prevent a customised Qemu firmware being overwritten
 $(QEMU_FIRMWARE):
 	cp $(OPENWRT_FIRMWARE) $@
 
+$(BIOS_BIN):
+	wget http://bifferos.co.uk/downloads/bifferboard/qemu/biffboot-3_5-qemu.bin -O $@
+#	To use seabios...
+#	cp ./seabios/out/bios.bin $@
+	
+
 # Run the emulation
-run: $(QEMU_BIN) $(SEABIOS_BIN) $(OPENWRT_KERNEL) $(QEMU_FIRMWARE)
+run: $(QEMU_BIN) $(BIOS_BIN) $(QEMU_FIRMWARE)
 	$(QEMU_BIN) \
 		-cpu 486 -m 32 -kmax 0x10  \
-		-bios $(SEABIOS_BIN)  \
+		-bios $(BIOS_BIN)  \
 		-rtc base="2009-08-07T04:02:00" \
 		-firmware $(QEMU_FIRMWARE)   \
-		-kernel $(OPENWRT_KERNEL)   \
-		-append "console=uart,io,0x3f8 rootfstype=jffs2"   \
 		-vga none -nographic \
 		-L qemu/pc-bios/optionrom  \
 		-net nic,model=r6040,macaddr=52:54:00:12:34:57   \
 		-net user
+
+
 		
 		
 # Add option for discarding the flash if you don't want to save it each time
@@ -83,4 +88,5 @@ ser_upload: $(OPENWRT_FIRMWARE)
 # Upload to 8MB bifferboard over ethernet - you *will* need to change the
 # Bifferboard MAC address, and you may need to change the PC network device
 eth_upload: $(OPENWRT_FIRMWARE)
-	sudo tools/bb_eth_upload8.py eth0 00:01:02:03:04:05 $<
+	sudo tools/bb_eth_upload8.py eth0 ff:ff:ff:ff:ff:ff $<
+
