@@ -25,9 +25,26 @@ $(SEABIOS_BIN):
 $(OPENWRT_ROOTFS) $(OPENWRT_FIRMWARE):
 	make -C openwrt
 
+
+./config.bin: 
+	./tools/make_config_block.py
+
 # no dependencies, to prevent a customised Qemu firmware being overwritten
+# This is an approximation and may fail for very large firmware sizes
 $(QEMU_FIRMWARE):
-	cp $(OPENWRT_FIRMWARE) $@
+	dd if=/dev/zero of=$@ bs=1024 count=16
+	./tools/make_config_block.py 0x10 config.bin
+	cat config.bin >> $@
+	cat $(OPENWRT_FIRMWARE) >> $@
+	
+	
+
+# Make a flashable firmware from the backing file
+flashable.bin: $(QEMU_FIRMWARE)
+	dd if=$< of=$@ skip=24 bs=1024
+	echo "Written flashable firmware to" $@
+
+
 
 $(BIOS_BIN):
 	wget http://bifferos.co.uk/downloads/bifferboard/qemu/biffboot-3_5-qemu.bin -O $@
@@ -38,12 +55,11 @@ $(BIOS_BIN):
 # Run the emulation
 run: $(QEMU_BIN) $(BIOS_BIN) $(QEMU_FIRMWARE)
 	$(QEMU_BIN) \
-		-cpu 486 -m 32 -kmax 0x10  \
+		-cpu 486 -m 32  \
 		-bios $(BIOS_BIN)  \
 		-rtc base="2009-08-07T04:02:00" \
 		-firmware $(QEMU_FIRMWARE)   \
 		-vga none -nographic \
-		-L qemu/pc-bios/optionrom  \
 		-net nic,model=r6040,macaddr=52:54:00:12:34:57   \
 		-net user
 
@@ -76,7 +92,7 @@ qemu_debug:
 	gdb $(QEMU_BIN) -pid `ps -C qemu -o pid=` -x qemu/qemu-debug-startup.scr
 
 
-# Make a test image
+# Make a test USB image
 image:
 	./qemu/qemu-img create usbdisk.img 4G
 

@@ -25,69 +25,13 @@
 static uint8_t g_backing[FLASH_SIZE];
 
 
-struct _cfg_vals
-{
-  int32_t version;       // one for first version
-  uint8_t bootsource;   // 0=flash, 1=MMC 2=NET 3=USB  (0)
-  uint8_t console; // 0 = no console output, 1= console output (1)
-  uint8_t nic; // 0 = no nic, 1= nic init, 2=promiscuous  (1)
-  uint8_t boottype;  // 3 == Coreboot payload, 2 == Multiboot, 1 == linux, 0 == flat bin
-  uint32_t loadaddress;  // load address of payload (0x400000)
-  char cmndline[1024];  // null term, 1023 chars max
-  uint16_t kernelmax;  // counted in sectors to start of jffs2.
-  uint32_t myip;
-  uint32_t serverip;
-  uint8_t button;
-}  __attribute__((__packed__));
-
-
-
-
-
-// Write out a 'known-good' config block.  This is the OpenWrt default config block, and has a pre-calculated md5.
-// Change it within Biffboot if it doesn't suit, there seems little point in dragging in md5 here and exposing all 
-// these settings on the command-line.
-static void write_config_block(uint8_t* start)
-{
-  struct _cfg_vals* cfg = (struct _cfg_vals*)start;
-  md5_byte_t digest[16];
-  md5_state_t pms;
-  
-
-  // Put the entire area into the erased state (all 0xff)
-  memset(start, 0xff, 0x2000);
-  
-  cfg->version = 1;
-  cfg->bootsource = 0;
-  cfg->console = 1;
-  cfg->nic = 1;
-  cfg->boottype = 3;
-  cfg->boottype = 1;  // linux
-  cfg->loadaddress = 0x400000;
-  strcpy( cfg->cmndline, "console=uart,io,0x3f8 rootfstype=squashfs,jffs2 init=/etc/preinit");
-  //strcpy( cfg->cmndline, "");
-  cfg->kernelmax = kmax_size;
-  cfg->myip = 0x00;
-  cfg->serverip = 0x0202000a;
-  cfg->button = 1;
-
-  
-  md5_init(&pms);
-  md5_append(&pms, start, 0x1ff0);
-  md5_finish(&pms, digest);
-  
-  memcpy(&start[0x1ff0], digest, sizeof(digest));
-
-}
-
-
 static void flash_load_image(const char* fw_name)
 {
     int fd, len;
     int available;
     
     // setup a sensible config block
-    write_config_block(&g_backing[0x4000]);
+    //write_config_block(&g_backing[0x4000]);
         
     
     fd = open(fw_name, O_RDONLY | O_BINARY);
@@ -101,19 +45,16 @@ static void flash_load_image(const char* fw_name)
     len = lseek(fd, 0, SEEK_END);
     lseek(fd, 0, SEEK_SET);
     
-    // refuse to load really massive images that overwrite the config block, because we want to set it 
-    // explicitly.
-    available = sizeof(g_backing) - 0x6000;  // end of config block -> end of flash.
-    if (read(fd, &g_backing[0x6000], available) != len) {
+    available = sizeof(g_backing);  
+    if (read(fd, &g_backing[0], available) != len) {
         if (len>available)
 	{
 	  printf("Truncated over-sized backing file\n");
 	}
         if (len<available)
 	{
-	  // NB doesn't pad the bit before the config, mostly dead-space these days.
 	  printf("Padding backing file for flash with %d bytes\n", available - len);
-	  memset(&g_backing[0x6000+len], 0xff, available-len);
+	  memset(&g_backing[0+len], 0xff, available-len);
 	}
     }
     close(fd);
@@ -123,17 +64,16 @@ static void flash_load_image(const char* fw_name)
 void en29lv640_save_image(void)
 {
     int fd = open(firmware_name, O_RDWR | O_BINARY);    
-    int towrite = FLASH_DEV_LEN - 0x6000;
-    int written = write(fd, &g_backing[0x6000], towrite);
+    int towrite = FLASH_DEV_LEN;
+    int written = write(fd, &g_backing[0], towrite);
     if (towrite == written)
     {
-      printf("Writing out flash to %s\n", firmware_name);
+      printf("Writing out flash to backing file %s\n", firmware_name);
     }
     else
     {
-      printf("Error writing to flash file %s (only %d bytes written)\n", firmware_name, written);
+      printf("Error writing out flash to backing file %s (only %d bytes written)\n", firmware_name, written);
     }
-    
     close(fd);
 }
 
