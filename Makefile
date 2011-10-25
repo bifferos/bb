@@ -13,21 +13,16 @@ all:
 	make -C openwrt
 	cd qemu && ./configure
 	make -C qemu
-	make -C seabios
+#	make -C seabios
 
 $(QEMU_BIN):
 	cd qemu && ./configure
 	make -C qemu
 
-$(SEABIOS_BIN):
-	make -C seabios
 
 $(OPENWRT_ROOTFS) $(OPENWRT_FIRMWARE):
 	make -C openwrt
 
-
-./config.bin: 
-	./tools/make_config_block.py
 
 # no dependencies, to prevent a customised Qemu firmware being overwritten
 # This is an approximation and may fail for very large firmware sizes
@@ -36,7 +31,6 @@ $(QEMU_FIRMWARE):
 	./tools/make_config_block.py 0x10 config.bin
 	cat config.bin >> $@
 	cat $(OPENWRT_FIRMWARE) >> $@
-	
 	
 
 # Make a flashable firmware from the backing file
