@@ -41,7 +41,7 @@ flashable.bin: $(QEMU_FIRMWARE)
 
 
 $(BIOS_BIN):
-	wget http://bifferos.co.uk/downloads/bifferboard/qemu/biffboot-3_5-qemu.bin -O $@
+	wget http://bifferos.co.uk/downloads/bifferboard/qemu/biffboot-3_6-qemu.bin -O $@
 #	To use seabios...
 #	cp ./seabios/out/bios.bin $@
 	
