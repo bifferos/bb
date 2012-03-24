@@ -32,7 +32,7 @@ endef
 
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
-		./configure --enable-parport --enable-parport_ppdev \
+		./configure --host=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX) --enable-parport --enable-parport_ppdev --disable-doxygen-html\
 	);
 endef
 
