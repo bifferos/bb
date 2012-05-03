@@ -7,7 +7,6 @@ include $(INCLUDE_DIR)/kernel.mk
 
 PKG_NAME:=xenomai
 PKG_VERSION:=2.6.0
-PKG_RELEASE:=1
 
 PKG_BUILD_DIR:=$(BUILD_DIR)/$(PKG_NAME)-$(PKG_VERSION)
 
@@ -17,18 +16,18 @@ PKG_MD5SUM:=360123b0616cc7499b4b3b9366711e08
 
 XENOMAI_PATCH_DIR:=ksrc/arch/x86/patches/
 ifeq ($(LINUX_VERSION), 2.6.37.6)
-  XENOMAI_PATCH:=$(XENOMAI_PATCH_DIR)adeos-ipipe-2.6.37.6-x86-2.9-02.patch
+   XENOMAI_PATCH:=$(XENOMAI_PATCH_DIR)adeos-ipipe-2.6.37.6-x86-2.9-02.patch
 endif
 ifeq ($(LINUX_VERSION), 2.6.38.8)
-  XENOMAI_PATCH:=$(XENOMAI_PATCH_DIR)adeos-ipipe-2.6.38.8-x86-2.10-01.patch
+   XENOMAI_PATCH:=$(XENOMAI_PATCH_DIR)adeos-ipipe-2.6.38.8-x86-2.10-01.patch
 endif
 
 include $(INCLUDE_DIR)/package.mk
 
 define Package/xenomai
-	SECTION:=xenomai
-	CATEGORY:=Utilities
-	TITLE:=Xenomai: Real-Time Framework for Linux
+   SECTION:=xenomai
+   CATEGORY:=Utilities
+   TITLE:=Xenomai: Real-Time Framework for Linux
 endef
 
 define Package/xenomai/description
@@ -39,11 +38,15 @@ endef
 
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
-		./scripts/prepare-kernel.sh --adeos=$(XENOMAI_PATCH) --linux=$(BUILD_DIR_BASE)/linux-$(BOARD)/linux-$(LINUX_VERSION)/ --arch=$(ARCH)\
+	./scripts/prepare-kernel.sh --adeos=$(XENOMAI_PATCH) --linux=$(BUILD_DIR_BASE)/linux-$(BOARD)/linux-$(LINUX_VERSION)/ --arch=$(ARCH);\
+	./configure --disable-doc-install --host=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX) --target=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX); \
 	);
 endef
 
 define Build/Compile
+	(cd $(PKG_BUILD_DIR); \
+	$(MAKE); \
+	);
 endef
 
 define Package/xenomai/install
