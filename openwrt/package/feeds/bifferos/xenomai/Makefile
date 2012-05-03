@@ -1,7 +1,4 @@
-#
 # Makefile for xenomai by Nicolas Le Falher
-#	chmod +x $(PKG_BUILD_DIR)/scripts/xeno-config; \
-#		--includedir=$(PKG_BUILD_DIR)/include \
 
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
