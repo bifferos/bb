@@ -50,6 +50,7 @@ define Build/Compile
 endef
 
 define Package/xenomai/install
+#If nothing here, Openwrt won't compile
 endef
 
 $(eval $(call BuildPackage,xenomai))
