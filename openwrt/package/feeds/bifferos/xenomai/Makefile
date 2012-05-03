@@ -1,6 +1,7 @@
 #
 # Makefile for xenomai by Nicolas Le Falher
-#
+#	chmod +x $(PKG_BUILD_DIR)/scripts/xeno-config; \
+#		--includedir=$(PKG_BUILD_DIR)/include \
 
 include $(TOPDIR)/rules.mk
 include $(INCLUDE_DIR)/kernel.mk
@@ -22,12 +23,15 @@ ifeq ($(LINUX_VERSION), 2.6.38.8)
    XENOMAI_PATCH:=$(XENOMAI_PATCH_DIR)adeos-ipipe-2.6.38.8-x86-2.10-01.patch
 endif
 
+PKG_INSTALL_DIR:=$(PKG_BUILD_DIR)/tmp_install/usr/xenomai
+
 include $(INCLUDE_DIR)/package.mk
 
 define Package/xenomai
    SECTION:=xenomai
    CATEGORY:=Utilities
    TITLE:=Xenomai: Real-Time Framework for Linux
+   DEPENDS:=+librt
 endef
 
 define Package/xenomai/description
@@ -39,18 +43,39 @@ endef
 define Build/Configure
 	(cd $(PKG_BUILD_DIR); \
 	./scripts/prepare-kernel.sh --adeos=$(XENOMAI_PATCH) --linux=$(BUILD_DIR_BASE)/linux-$(BOARD)/linux-$(LINUX_VERSION)/ --arch=$(ARCH);\
-	./configure --disable-doc-install --host=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX) --target=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX); \
+	./configure \
+		--enable-debug \
+		--program-prefix= \
+		--disable-doc-install \
+		--host=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX) \
+		--target=$(OPTIMIZE_FOR_CPU)-openwrt-linux-$(TARGET_SUFFIX) \
+		--enable-smp \
+		--enable-x86-sep \
+		--enable-x86-tsc \
+		;\
 	);
 endef
 
 define Build/Compile
 	(cd $(PKG_BUILD_DIR); \
+	mkdir $(PKG_BUILD_DIR)/tmp_install; \
 	$(MAKE); \
+	$(MAKE) DESTDIR=$(PKG_BUILD_DIR)/tmp_install install-user; \
 	);
 endef
 
 define Package/xenomai/install
-#If nothing here, Openwrt won't compile
+	$(INSTALL_DIR) $(1)/usr/xenomai
+	$(INSTALL_DIR) $(1)/usr/xenomai/include
+	$(CP) $(PKG_INSTALL_DIR)/include/* $(1)/usr/xenomai/include
+	$(INSTALL_DIR) $(1)/usr/xenomai/bin
+	$(CP) $(PKG_INSTALL_DIR)/bin/* $(1)/usr/xenomai/bin
+	$(INSTALL_DIR) $(1)/usr/xenomai/lib
+	$(CP) $(PKG_INSTALL_DIR)/lib/* $(1)/usr/xenomai/lib
+	$(INSTALL_DIR) $(1)/usr/xenomai/sbin
+	$(CP) $(PKG_INSTALL_DIR)/sbin/* $(1)/usr/xenomai/sbin
+	$(INSTALL_DIR) $(1)/usr/xenomai/share
+	$(CP) $(PKG_INSTALL_DIR)/share/* $(1)/usr/xenomai/share
 endef
 
 $(eval $(call BuildPackage,xenomai))
