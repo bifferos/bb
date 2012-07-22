@@ -220,10 +220,10 @@ index 0000000..fdaeeb0
 +#ifdef CONFIG_IPIPE
 +
 +#ifndef IPIPE_ARCH_STRING
-+#define IPIPE_ARCH_STRING	"2.11-01"
++#define IPIPE_ARCH_STRING	"2.11-02"
 +#define IPIPE_MAJOR_NUMBER	2
 +#define IPIPE_MINOR_NUMBER	11
-+#define IPIPE_PATCH_NUMBER	1
++#define IPIPE_PATCH_NUMBER	2
 +#endif
 +
 +DECLARE_PER_CPU(struct pt_regs, __ipipe_tick_regs);
@@ -515,8 +515,8 @@ index 0000000..c99830b
 +#define __ipipe_hrtimer_freq	__ipipe_cpu_freq
 +#define __ipipe_hrclock_freq	__ipipe_cpu_freq
 +
-+#define ipipe_tsc2ns(t)	(((t) * 1000UL) / (__ipipe_clock_freq / 1000000UL))
-+#define ipipe_tsc2us(t)	((t) / (__ipipe_clock_freq / 1000000UL))
++#define ipipe_tsc2ns(t)	(((t) * 1000UL) / (__ipipe_cpu_freq / 1000000UL))
++#define ipipe_tsc2us(t)	((t) / (__ipipe_cpu_freq / 1000000UL))
 +
 +/* Private interface -- Internal use only */
 +
@@ -3108,7 +3108,7 @@ new file mode 100644
 index 0000000..5be7005
 --- /dev/null
 +++ b/arch/x86/kernel/ipipe.c
-@@ -0,0 +1,881 @@
+@@ -0,0 +1,880 @@
 +/*   -*- linux-c -*-
 + *   linux/arch/x86/kernel/ipipe.c
 + *
@@ -3181,7 +3181,6 @@ index 0000000..5be7005
 +extern gate_desc idt_table[];
 +#endif
 +EXPORT_PER_CPU_SYMBOL(vector_irq);
-+EXPORT_SYMBOL(irq_desc);
 +EXPORT_SYMBOL(idt_table);
 +EXPORT_SYMBOL(i8259A_lock);
 +EXPORT_SYMBOL(__ipipe_sync_stage);
@@ -3696,7 +3695,7 @@ index 0000000..5be7005
 +		ipipe_trace_panic_freeze();
 +
 +		/* Always warn about user land and unfixable faults. */
-+		if ((error_code & 4) || !search_exception_tables(instruction_pointer(regs))) {
++		if (user_mode_vm(regs) || !search_exception_tables(instruction_pointer(regs))) {
 +			printk(KERN_ERR "BUG: Unhandled exception over domain"
 +			       " %s at 0x%lx - switching to ROOT\n",
 +			       ipd->name, instruction_pointer(regs));
