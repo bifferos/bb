@@ -388,7 +388,7 @@ if __name__ == "__main__":
   cmd = sys.argv[1]
 
   if cmd == "toolchain":
-    #Toolchain()
+    Toolchain()
     Kernel()
   elif cmd == "compile":
     Compile()
