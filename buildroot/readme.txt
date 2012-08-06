@@ -50,8 +50,14 @@ libjpeg_6b-1_rdc.ipk
 libpthread_0.9.32-79_rdc.ipk
 mjpg-streamer_r136-1_rdc.ipk
 
+Copy them to ./packages/.
+
 You may also need some files in a /www directory for mjpg-streamer,
-depending on the command-line used.
+depending on the command-line used.  They can be either added to the ./files
+directory, and risk bloating the firmware, or you can simply make up a fake
+'package' for them, by putting them in a tarball called './data.tar.gz' and
+then wrapping that tarball in another one called something like
+'mjpg-streamer-www_1_rdc.ipk'.
 
 
 Step 3 - Experiment by 'pushing' a tarball with the files to the board
@@ -59,7 +65,8 @@ Step 3 - Experiment by 'pushing' a tarball with the files to the board
 run ./mkbiffrd.py upload <addr>
 
 Where <addr> is the address of the board.  This will generate a local copy
-of the rootfs (ftp.tgz) and then upload it to /ftp.tgz.
+of the rootfs (ftp.tgz) including packages and kernel modules and then upload 
+it to /ftp.tgz.
 
 Then telnet to the board and
 extract the tarball:
@@ -74,7 +81,7 @@ happening on the webcam.  You may need to run mdev -a to get the
 Step 4 - Switch to automated download of your application
 
 Make ftp.tgz available on a webserver on your network, perhaps even another
-Bifferboard.
+Bifferboard (one with JFFS).
 Add some instructions to the end of files/etc/init.d/rcS, something like:
 
 cd /
