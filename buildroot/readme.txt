@@ -33,9 +33,9 @@ in 1MB of flash.
 
 Step 1 - Compile kernel modules
 
-run ./mkbiffrd.py /config-kernel
+run ./mkbiffrd.py config-kernel
 
-Choose USB modules and any required webcam modules.  Save and quit.
+Choose USB modules and any required video modules.  Save and quit.
 
 run ./mkbiffrd.py compile
 
@@ -65,6 +65,10 @@ Then telnet to the board and
 extract the tarball:
 
 tar xf ftp.tgz
+
+You should be able to run mjpg-streamer at this point and see something
+happening on the webcam.  You may need to run mdev -a to get the
+/dev/video0 device to appear.
 
 
 Step 4 - Switch to automated download of your application
