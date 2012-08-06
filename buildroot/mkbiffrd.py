@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 
 # Script to create initrd for Bifferboard.
-# bifferos@yahoo.co.uk, 2009.
+# bifferos@yahoo.co.uk, 2012.
 #
-
 
 
 ######################################################################
 # Create these directories
 dirs = """sbin dev etc/init.d home proc sys tmp usr/bin usr/sbin
           usr/share/udhcpc var/log var/run config"""
-
 
 
 import os, sys, glob, stat, shutil, subprocess, re, tarfile
@@ -34,7 +32,6 @@ def GetKernelDir():
 
 def GetBuildrootDir():
   return os.path.abspath(FindDirWithPrefix("buildroot-"))
-
 
 
 def P2C(val,fp):
@@ -98,7 +95,6 @@ def Python2CPIO_all(d,fp):
   P2C(d["check"],fp)  
   fp.write(d["name"])
   fp.write(d["file"])
-
 
 
 class CpioArchive:
@@ -180,6 +176,45 @@ def GetCPIO(root):
   p = subprocess.Popen("find . | cpio -H newc -o", shell=True, stdout=subprocess.PIPE, close_fds=True)  
   os.chdir(before)
   return p.stdout.read()
+
+
+def RemoveTarAndDir(ver):
+  tar = ver + ".tar.bz2"
+  if os.path.exists(tar):
+    os.unlink(tar)
+  if os.path.exists(ver):
+    shutil.rmtree(ver)
+
+
+def Toolchain():
+  "Make a toolchain by downloading buildroot"
+  ver = "buildroot-2011.11"
+  tar = ver + ".tar.bz2"
+  RemoveTarAndDir(ver)
+  os.system("wget http://buildroot.uclibc.org/downloads/" + tar)
+  os.system("tar xf " + tar)
+  
+  # Copy the buildroot config first, sets arch to 486, needed for Bifferboard.
+  # Also sets the build to prefer static libs.
+  shutil.copyfile("configs/%s-config" % ver, ver + "/.config")
+  
+  # Copy the busybox default config over the stored defaults, to force busybox static-linked
+  cfg = "/busybox-1.19.x.config"
+  shutil.copyfile("configs"+cfg, ver+"/package/busybox"+cfg)
+  
+  # Finally build the toolchain and busybox.
+  os.system("make -C "+ver)
+  
+  
+def Kernel():
+  "Download the kernel and copy config"
+  ver = "linux-2.6.37.6"
+  RemoveTarAndDir(ver)
+  tar = ver + ".tar.bz2"
+  url = "http://www.kernel.org/pub/linux/kernel/v2.6/"+tar
+  os.system("wget "+url)
+  os.system("tar xf " + tar)
+  shutil.copyfile("configs/%s-config" % ver, ver + "/.config")
 
 
 def ExtractBusySymlinks(busybin):
@@ -272,18 +307,6 @@ def Compile():
   print "Written 'bzImage'"
 
 
-go_script = """#!/bin/sh
-# Application script for video streaming
-tar xf ftp.tgz
-depmod
-modprobe ohci-hcd
-modprobe ehci-hcd
-modprobe uvcvideo
-mdev -s
-mjpg_streamer -i "input_uvc.so -y -r 320x240" -o "output_http.so -w /www -p 8090"
-"""
-
-
 def MakeRootTarball(out, src):
   "Remove the directory prefix (src), add the files underneath it"
   tar = tarfile.open(out, "w:gz")
@@ -328,10 +351,6 @@ def PrepareUpload(root, addr):
 
   ftp_put_file(root+".tgz",addr)
   print "tgz file uploaded"
-  file("go", "wb").write(go_script)
-  os.chmod("go", 0755)
-  ftp_put_file("go",addr)
-  print "go script uploaded"
 
 
 def ftp_put_file(fname, addr):
@@ -351,6 +370,7 @@ def Help():
   print 
   print "Utility to compile up firmware to fit in 1MB flash."
   print "<command> can be:"
+  print "  toolchain: Compile a toolchain including buildroot and busybox"
   print "  compile: Re-make the ramdisk and compile the kernel"
   print "  config-kernel: Configure the kernel"
   print "  config-busybox: Configure the busybox"
@@ -367,7 +387,10 @@ if __name__ == "__main__":
 
   cmd = sys.argv[1]
 
-  if cmd == "compile":
+  if cmd == "toolchain":
+    #Toolchain()
+    Kernel()
+  elif cmd == "compile":
     Compile()
   elif cmd == "modules":
     Modules()
