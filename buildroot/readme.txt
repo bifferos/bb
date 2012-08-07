@@ -123,15 +123,8 @@ other packages.
 
 Step 3 - Construct your run.sh script
 
-For this application it can look like this:
-
-#!/bin/sh
-depmod                # we've just extracted kernel modules so update deps.
-modprobe ohci-hcd     # load USB modules (no udev daemon!)
-modprobe uvcvideo     # load video modules
-mdev -s               # update contents of /dev for any connected devices
-# Run the application
-mjpg_streamer -i "input_uvc.so -y -r 320x240" -o "output_http.so -w /www -p 8090"
+For this application check out the commented example script in the
+application directory.
 
 
 Step 4 - Experiment by 'pushing' a tarball with the files to the board

@@ -1,1 +1,1 @@
-Put you 'run.sh' shell script here, to start your application.
+Put your 'run.sh' shell script here, to start your application.
