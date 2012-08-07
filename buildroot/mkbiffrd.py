@@ -190,6 +190,8 @@ def Toolchain():
   "Make a toolchain by downloading buildroot"
   ver = "buildroot-2011.11"
   tar = ver + ".tar.bz2"
+  if os.path.exists(ver):
+    raise OSError("The toolchain takes a long time to build.  Remove the build directory manually if you want a rebuild!")
   RemoveTarAndDir(ver)
   os.system("wget http://buildroot.uclibc.org/downloads/" + tar)
   os.system("tar xf " + tar)
@@ -335,7 +337,7 @@ def OpkgToRootfs(pkg, root):
   tar.extractall(root)
 
 
-def PrepareUpload(root, addr):
+def PrepareUpload(root):
   "Prepares our application"
   # Clean up any stale module directory.
   os.system("rm -Rf "+root)
@@ -346,11 +348,23 @@ def PrepareUpload(root, addr):
   for pkg in glob.glob("packages/*_rdc.ipk"):
     OpkgToRootfs(pkg, root)
 
+  aps= "application/run.sh"
+  target = root+"/run.sh"
+  if not os.path.isfile(aps):
+    OSError("No application start script found, please add your script to ./application/run.sh")
+  shutil.copyfile(aps, target)
+  os.chmod(target, 0755)
+
   # Create tarball from all the stuff to be added to the base booted image.
   MakeRootTarball(root+".tgz", root)
 
-  ftp_put_file(root+".tgz",addr)
-  print "tgz file uploaded"
+
+def DoUpload(root, addr):
+  tar = root + ".tgz"
+  if not os.path.isfile(tar):
+    PrepareUpload(root)
+  ftp_put_file(tar,addr)
+  print "tgz app file uploaded"
 
 
 def ftp_put_file(fname, addr):
@@ -374,7 +388,8 @@ def Help():
   print "  compile: Re-make the ramdisk and compile the kernel"
   print "  config-kernel: Configure the kernel"
   print "  config-busybox: Configure the busybox"
-  print "  upload <addr>: Generate root tarball and upload it(needs address argument)"
+  print "  makeapp: Create the 'app.tgz' tarball"
+  print "  upload [<addr>]: Generate root tarball and upload it(needs address argument)"
   print
   sys.exit(1)
 
@@ -398,10 +413,12 @@ if __name__ == "__main__":
     ConfigureKernel()
   elif cmd == "config-busybox":
     ConfigureBusyBox()
+  elif cmd == "makeapp":
+    PrepareUpload("approot")
   elif cmd == "upload":
     if not sys.argv[2:]:
       Help()
-    PrepareUpload("ftp", sys.argv[2])
+    DoUpload("approot", sys.argv[2])
   else:
     Help()
 

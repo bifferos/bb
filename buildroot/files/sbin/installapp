@@ -1,0 +1,22 @@
+#!/bin/sh
+
+# Build server URL
+MYIP=`/sbin/biffparam biffip`
+SERVERIP=`/sbin/biffparam biffserver`
+URL=http://$SERVERIP/applications/$MYIP/approot.tgz
+
+if [ "$SERVERIP" != "" ]; then
+# Only try this if the server IP address has been set.
+cd /
+echo "= Getting application..."
+wget $URL
+echo "= Extracting application..."
+tar xf approot.tgz
+
+if [ -x /run.sh ]; then
+echo "= Running application..."
+/run.sh &
+fi
+
+fi
+

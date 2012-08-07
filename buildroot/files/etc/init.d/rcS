@@ -35,3 +35,5 @@ telnetd -l /bin/sh
 echo "* Starting inetd..."
 inetd
 
+echo "* Running application..."
+/sbin/installapp
