@@ -1,0 +1,37 @@
+<html>
+<body>
+
+
+<h1>
+Set thermostat
+</h1>
+
+<form name="therm" action="/cgi-bin/therm" method="get">
+Set value:
+<select name="therm">
+  <option value="10">10 degrees</option>
+  <option value="15">15 degrees</option>
+  <option value="17">17 degrees</option>
+  <option value="20">20 degrees</option>
+  <option value="22">22 degrees</option>
+  <option value="25">25 degrees</option>
+</select>
+<input type="submit" value="Submit" />
+</form>
+
+
+<h1>
+Send a message
+</h1>
+
+<form name="message" action="/cgi-bin/message" method="get">
+Message Text: <input type="text" size="16" maxlength="16" name="message" />
+<input type="submit" value="Submit" />
+</form> 
+
+<p>
+Click <a href="/cgi-bin/status.sh">here</a> to check status
+
+
+</body>
+</html>
