@@ -32,25 +32,24 @@
 #include "libbb.h"
 
 
-#define MAX_GPIO_STRING 60    /* capable of holding any GPIO path */
+#define MAX_BUTTON_STRING 20    /* button string */
+#define MAX_GPIO_STRING 60      /* complete path to button
 
 
 struct globals {
-	int gpio_button;
-	char gpio_button_str[MAX_GPIO_STRING];
+	char gpio_button[MAX_BUTTON_STRING];
 	char gpio_pin_path[MAX_GPIO_STRING];	
 } FIX_ALIASING;
 
 
 #define G (*(struct globals*)&bb_common_bufsiz1)
-#define INIT_G() do { G.gpio_button = -1; } while (0)
 
 
 static void linuxgpio_export(int export)
 {
 	int fd;
 	char buf[MAX_GPIO_STRING];
-	char* butt_str = G.gpio_button_str;
+	char* butt_str = G.gpio_button;
 
 	fd = xopen(export?"/sys/class/gpio/export":"/sys/class/gpio/unexport", O_WRONLY);
 	write(fd, butt_str, strlen(butt_str));
@@ -59,7 +58,7 @@ static void linuxgpio_export(int export)
 	if (export)
 	{
 		/* set direction */
-		sprintf(buf, "/sys/class/gpio/gpio%d/direction", G.gpio_button);
+		snprintf(buf, sizeof(buf), "/sys/class/gpio/gpio%s/direction", G.gpio_button);
 		fd = xopen(buf, O_WRONLY);
 		write(fd, "in", 3);
 		close(fd);
@@ -96,7 +95,7 @@ static void button_shutdown(int sig UNUSED_PARAM)
 
 static void run_helper(char* path, char* count)
 {
-	char *const args[] = {path, G.gpio_button_str, count, NULL};
+	char *const args[] = {path, G.gpio_button, count, NULL};
 	if (execvp(path,args)==-1)
 		bb_perror_msg_and_die("Failed To execute action");
 	_exit(EXIT_SUCCESS);
@@ -135,7 +134,7 @@ int button_main(int argc, char **argv )
 	char* sample_arg;
 	unsigned sample_period = 100;
   
-	INIT_G();
+	//INIT_G();
   
 	opt_complementary = "=2";  /* 2 arguments+ */
 	opts = getopt32(argv, "Fht:", &sample_arg);
@@ -161,16 +160,15 @@ int button_main(int argc, char **argv )
 	{
 		sample_period = xatoi_positive(sample_arg);
 	}
-  
-	G.gpio_button = xatoi_positive(argv[argc - 2]);
-	sprintf(G.gpio_button_str, "%d", G.gpio_button);
-	sprintf(G.gpio_pin_path, "/sys/class/gpio/gpio%d/value", G.gpio_button);
+
+	strncat(G.gpio_button, argv[argc - 2], sizeof(G.gpio_button)-1);
+	snprintf(G.gpio_pin_path, sizeof(G.gpio_pin_path), "/sys/class/gpio/gpio%s/value", G.gpio_button);
 
 	linuxgpio_export(1);
   
 	bb_signals(BB_FATAL_SIGS, button_shutdown);
        
-	bb_info_msg("Button on GPIO %d, period %d mS\n", G.gpio_button, sample_period);
+	bb_info_msg("Button on GPIO %s, period %d mS\n", G.gpio_button, sample_period);
   
 	sample_period *= 1000;  // mS
   
@@ -180,7 +178,7 @@ int button_main(int argc, char **argv )
     
 		if (press == linuxgpio_getpin())
 		{
-			bb_info_msg("Button %d pressed (%d)\n", G.gpio_button, push_count);
+			bb_info_msg("Button %s pressed (%d)\n", G.gpio_button, push_count);
 			fork_helper(argv[argc - 1], push_count);
 			push_count++;
 		}
