@@ -1,4 +1,6 @@
 #!/bin/sh
 
-echo "Hello you" $1 $2
+echo "Button Pressed:" $1 $2
+wavplay /doorbell.wav
+
 

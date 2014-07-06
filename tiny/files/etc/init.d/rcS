@@ -36,5 +36,9 @@ telnetd -l /bin/sh
 echo "* Starting inetd..."
 inetd
 
-echo "* Running application..."
-/sbin/installapp
+echo "* Setting mixer..."
+mixer speaker 20
+
+echo "* Running Doorbell application..."
+button 15 /test.sh
+
