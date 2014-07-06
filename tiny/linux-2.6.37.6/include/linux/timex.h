@@ -272,7 +272,7 @@ extern int do_adjtimex(struct timex *);
 int read_current_timer(unsigned long *timer_val);
 
 /* The clock frequency of the i8253/i8254 PIT */
-#define PIT_TICK_RATE 1193182ul
+#define PIT_TICK_RATE 1041816ul
 
 #endif /* KERNEL */
 

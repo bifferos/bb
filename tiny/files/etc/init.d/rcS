@@ -25,6 +25,7 @@ ifconfig lo 127.0.0.1
 
 echo "* Configuring network from kernel command-line..."
 ifconfig eth0 `/sbin/biffparam biffip`
+route add default gw `/sbin/biffparam biffip`
 
 echo "* Setting hostname..."
 hostname bifferboard

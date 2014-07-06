@@ -30,8 +30,15 @@ def GetKernelDir():
   return os.path.abspath(FindDirWithPrefix("linux-"))
 
 
-def GetBuildrootDir():
-  return os.path.abspath(FindDirWithPrefix("buildroot-"))
+def GetBusyboxDir():
+  return os.path.abspath(FindDirWithPrefix("busybox-"))
+
+
+def AddCrossCompiler():
+  cross = "/home/biff/bb/buildroot/buildroot-2011.11/output/host/usr/bin"
+  if os.environ["PATH"].find(cross) == -1:
+    os.environ["PATH"] = os.environ["PATH"]+":"+cross
+
 
 
 def P2C(val,fp):
@@ -185,27 +192,6 @@ def RemoveTarAndDir(ver):
   if os.path.exists(ver):
     shutil.rmtree(ver)
 
-
-def Toolchain():
-  "Make a toolchain by downloading buildroot"
-  ver = "buildroot-2011.11"
-  tar = ver + ".tar.bz2"
-  if os.path.exists(ver):
-    raise OSError("The toolchain takes a long time to build.  Remove the build directory manually if you want a rebuild!")
-  RemoveTarAndDir(ver)
-  os.system("wget http://buildroot.uclibc.org/downloads/" + tar)
-  os.system("tar xf " + tar)
-  
-  # Copy the buildroot config first, sets arch to 486, needed for Bifferboard.
-  # Also sets the build to prefer static libs.
-  shutil.copyfile("configs/%s-config" % ver, ver + "/.config")
-  
-  # Copy the busybox default config over the stored defaults, to force busybox static-linked
-  cfg = "/busybox-1.19.x.config"
-  shutil.copyfile("configs"+cfg, ver+"/package/busybox"+cfg)
-  
-  # Finally build the toolchain and busybox.
-  os.system("make -C "+ver)
   
   
 def Kernel():
@@ -240,7 +226,7 @@ def ExtractBusySymlinks(busybin):
 def InitBusyBox(root):
   dest = os.path.join(root,"sbin/busybox")
   
-  busy = GetBuildrootDir()+"/output/target/bin/busybox"
+  busy = GetBusyboxDir()+"/busybox"
   shutil.copyfile(busy, dest)
   os.chmod(dest, 0755)
 
@@ -291,134 +277,44 @@ def BiffInitrd():
 
 def BuildBusyBox():
   "Will refresh the compiled-in applets if the config has changed"
-  os.system('make -C "%s"' % GetBuildrootDir())
+  AddCrossCompiler()
+  os.system('make -C "%s"' % GetBusyboxDir())
 
 
-def ConfigureBusyBox():
-  "Congigure compiled-in busybox applets"
-  os.system('make -C "%s" busybox-menuconfig' % GetBuildrootDir())
+def BuildKernel():
+  AddCrossCompiler()
+  os.system('make -C "%s" CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+
+
+def ConfigKernel():
+  AddCrossCompiler()
+  os.system('make -C "%s" menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+
+def OldConfig():
+  AddCrossCompiler()
+  os.system('make -C "%s" oldconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+
 
 
 def Compile():
   BuildBusyBox()
   BiffInitrd()
-  os.environ["PATH"] = os.environ["PATH"]+":"+GetBuildrootDir()+"/output/host/usr/bin"
-  os.system('make -C "%s" CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+  BuildKernel()
   image = os.path.join(GetKernelDir(), "arch/x86/boot/bzImage")
   shutil.copyfile(image, "bzImage")
   print "Written 'bzImage'"
 
 
-def MakeRootTarball(out, src):
-  "Remove the directory prefix (src), add the files underneath it"
-  tar = tarfile.open(out, "w:gz")
-  os.chdir(src)
-  for root, dirs,names in os.walk("."):
-    for i in names:
-      p = os.path.join( root, i)
-      tar.add(p)
-  tar.close()
-  os.chdir("..")
-  
-
-def ExtractFromTar(data, fname):
-  tar = tarfile.open(mode="r:gz",fileobj=StringIO(data))
-  fp = tar.extractfile(fname)
-  return fp.read()
 
 
-def OpkgToRootfs(pkg, root):
-  "Read in an opkg and extract (install?) its contents to the given directory"
-  print "Reading",pkg
-  total = file(pkg,"rb").read()
-  data = ExtractFromTar(total, "./data.tar.gz")
-  
-  tar = tarfile.open(mode="r:gz",fileobj=StringIO(data))
-  tar.extractall(root)
-
-
-def PrepareUpload(root):
-  "Prepares our application"
-  # Clean up any stale module directory.
-  os.system("rm -Rf "+root)
-  os.environ["PATH"] = os.environ["PATH"]+":"+GetBuildrootDir()+"/output/host/usr/bin"
-  # Deal with kernel modules
-  os.system('make -C "%s" modules_install CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386 INSTALL_MOD_PATH=../%s' % (GetKernelDir(),root))
-
-  for pkg in glob.glob("packages/*_rdc.ipk"):
-    OpkgToRootfs(pkg, root)
-
-  aps= "application/run.sh"
-  target = root+"/run.sh"
-  if not os.path.isfile(aps):
-    OSError("No application start script found, please add your script to ./application/run.sh")
-  shutil.copyfile(aps, target)
-  os.chmod(target, 0755)
-
-  # Create tarball from all the stuff to be added to the base booted image.
-  MakeRootTarball(root+".tgz", root)
-
-
-def DoUpload(root, addr):
-  tar = root + ".tgz"
-  if not os.path.isfile(tar):
-    PrepareUpload(root)
-  ftp_put_file(tar,addr)
-  print "tgz app file uploaded"
-
-
-def ftp_put_file(fname, addr):
-  ftp = FTP(addr)
-  ftp.login()
-  ftp.storbinary('STOR %s'%fname, file(fname, "rb"))
-  ftp.quit()
-
-
-def ConfigureKernel():
-  os.environ["PATH"] = os.environ["PATH"]+":"+GetBuildrootDir()+"/output/host/usr/bin"
-  os.system('make -C "%s" CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386 menuconfig' % GetKernelDir())
-
-
-def Help():
-  print "Usage: mkbiffrd.py <command>"
-  print 
-  print "Utility to compile up firmware to fit in 1MB flash."
-  print "<command> can be:"
-  print "  toolchain: Compile a toolchain including buildroot and busybox"
-  print "  compile: Re-make the ramdisk and compile the kernel"
-  print "  config-kernel: Configure the kernel"
-  print "  config-busybox: Configure the busybox"
-  print "  makeapp: Create the 'app.tgz' tarball"
-  print "  upload [<addr>]: Generate root tarball and upload it(needs address argument)"
-  print
-  sys.exit(1)
 
 
 if __name__ == "__main__":
 
-
-  if not sys.argv[1:]:
-    Help()
-
-  cmd = sys.argv[1]
-
-  if cmd == "toolchain":
-    Toolchain()
-    Kernel()
-  elif cmd == "compile":
-    Compile()
-  elif cmd == "modules":
-    Modules()
-  elif cmd == "config-kernel":
-    ConfigureKernel()
-  elif cmd == "config-busybox":
-    ConfigureBusyBox()
-  elif cmd == "makeapp":
-    PrepareUpload("approot")
-  elif cmd == "upload":
-    if not sys.argv[2:]:
-      Help()
-    DoUpload("approot", sys.argv[2])
-  else:
-    Help()
-
+  #Compile()
+  
+  ConfigKernel()
+  
+  
+  
+  

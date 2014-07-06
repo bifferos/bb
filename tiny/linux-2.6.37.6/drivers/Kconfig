@@ -1,5 +1,11 @@
 menu "Device Drivers"
 
+config BIFFNOR
+	tristate "Bifferboard NOR flash support"
+	---help---
+	  Use to modify bifferboard flash.
+
+
 source "drivers/base/Kconfig"
 
 source "drivers/connector/Kconfig"

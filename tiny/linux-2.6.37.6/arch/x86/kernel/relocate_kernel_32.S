@@ -54,8 +54,6 @@ relocate_kernel:
 	movl	%eax, CR0(%edi)
 	movl	%cr3, %eax
 	movl	%eax, CR3(%edi)
-	movl	%cr4, %eax
-	movl	%eax, CR4(%edi)
 
 	/* read the arguments and say goodbye to the stack */
 	movl  20+4(%esp), %ebx /* page_list */
@@ -122,7 +120,6 @@ identity_mapped:
 	 * Setting everything to zero seems safe.
 	 */
 	xorl	%eax, %eax
-	movl	%eax, %cr4
 
 	jmp 1f
 1:
@@ -193,8 +190,6 @@ identity_mapped:
 	ret
 
 virtual_mapped:
-	movl	CR4(%edi), %eax
-	movl	%eax, %cr4
 	movl	CR3(%edi), %eax
 	movl	%eax, %cr3
 	movl	CR0(%edi), %eax

@@ -463,6 +463,12 @@ config MICROCOM
 	help
 	  The poor man's minicom utility for chatting with serial port devices.
 
+config MIXER
+	bool "mixer"
+	default y
+	help
+	  Utility to set the OSS sound level.
+
 config MOUNTPOINT
 	bool "mountpoint"
 	default y
@@ -590,5 +596,12 @@ config WATCHDOG
 	  watchdog applet ever fails to write the magic character within a
 	  certain amount of time, the watchdog device assumes the system has
 	  hung, and will cause the hardware to reboot.
+
+config WAVPLAY
+	bool "wavplay"
+	default n
+	select PLATFORM_LINUX
+	help
+	  The wavplay applet plays a wav using OSS
 
 endmenu

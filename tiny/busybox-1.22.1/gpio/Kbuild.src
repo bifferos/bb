@@ -1,0 +1,11 @@
+# Makefile for busybox
+#
+# Copyright (C) 2014 by Bifferos <sales@bifferos.com>
+#
+# Licensed under GPLv2, see file LICENSE in this source tree.
+
+lib-y:=
+
+INSERT
+lib-$(CONFIG_BUTTON)          += button.o
+
