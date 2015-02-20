@@ -29,7 +29,7 @@ configure: ;
 
 $(call set-vpath, $(SRC_PATH):$(SRC_PATH)/hw)
 
-LIBS+=-lz $(LIBS_TOOLS)
+LIBS+=-lz -lrt -lm $(LIBS_TOOLS)
 
 ifdef BUILD_DOCS
 DOCS=qemu-doc.html qemu-tech.html qemu.1 qemu-img.1 qemu-nbd.8 QMP/qmp-commands.txt
@@ -71,7 +71,7 @@ defconfig:
 
 -include config-all-devices.mak
 
-build-all: $(DOCS) $(TOOLS) recurse-all
+build-all: $(TOOLS) recurse-all
 
 config-host.h: config-host.h-timestamp
 config-host.h-timestamp: config-host.mak
