@@ -135,6 +135,16 @@ static void not(void)
 	push(~(data_t) pop());
 }
 
+static void gt(void)
+{
+	push(pop() < pop());
+}
+
+static void ge(void)
+{
+	push(pop() <= pop());
+}
+
 static void set_output_base(void)
 {
 	static const char bases[] ALIGN1 = { 2, 8, 10, 16, 0 };
@@ -222,6 +232,8 @@ static const struct op operators[] = {
 	{"mul", mul},
 	{"/",   divide},
 	{"div", divide},
+	{"gt", gt},
+	{"ge", ge},
 	{"p", print_no_pop},
 	{"f", print_stack_no_pop},
 	{"o", set_output_base},
