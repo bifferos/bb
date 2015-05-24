@@ -63,10 +63,15 @@ static void push(double a)
 	stack[pointer++] = a;
 }
 
-static double pop(void)
+static void check_under(void)
 {
 	if (pointer == 0)
 		bb_error_msg_and_die("stack underflow");
+}
+
+static double pop(void)
+{
+	check_under();
 	return stack[--pointer];
 }
 
@@ -187,6 +192,7 @@ static void print_stack_no_pop(void)
 
 static void print_no_pop(void)
 {
+	check_under();
 	print_base(stack[pointer-1]);
 }
 
