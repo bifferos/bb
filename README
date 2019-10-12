@@ -1,6 +1,10 @@
 
 Instructions for use
 
+This was originally developerd on Slackware circa 13.1, however that Slack version does not boot on VirtualBox 6.0.12.
+Use instead Slackware 13.37.  Slackware 14.0 is too late and some compile errors start to emerge at that point 
+(probably fixable but...).  You will need to download kernel linux-2.6.37.6.tar.bz2 and put it in the openwrt/dl directory 
+because the OpenWrt have removed it from their site.  Otherwise the compile seems to work as of 12 Oct 2019.
 
 To build Bifferboard firmware and emulator type 'make'.
 
