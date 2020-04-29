@@ -17,4 +17,12 @@ config BUTTON
 	  Button sends a network packet whenever pressed (requires GPIO).
 
 
+config BUTTONDSR
+        bool "buttondsr"
+        default y
+        select ROUTE
+        help
+          Button runs a program whenever dsr is shorted to ground.
+
+
 endmenu
