@@ -8,4 +8,5 @@ lib-y:=
 
 INSERT
 lib-$(CONFIG_BUTTON)          += button.o
+lib-$(CONFIG_BUTTONDSR)       += buttondsr.o
 
