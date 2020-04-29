@@ -33,7 +33,7 @@
 
 
 #define MAX_BUTTON_STRING 20    /* button string */
-#define MAX_GPIO_STRING 60      /* complete path to button
+#define MAX_GPIO_STRING 60      /* complete path to button */
 
 
 struct globals {

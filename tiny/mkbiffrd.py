@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3
 
 # Script to create initrd for Bifferboard.
 # bifferos@yahoo.co.uk, 2012.
@@ -12,8 +12,9 @@ dirs = """sbin dev etc/init.d home proc sys tmp usr/bin usr/sbin
 
 
 import os, sys, glob, stat, shutil, subprocess, re, tarfile
-from StringIO import StringIO
+from io import StringIO, BytesIO
 from ftplib import FTP
+from pathlib import Path
 
 
 def FindDirWithPrefix(name):
@@ -35,21 +36,21 @@ def GetBusyboxDir():
 
 
 def AddCrossCompiler():
-  cross = "/home/biff/bb/buildroot/buildroot-2011.11/output/host/usr/bin"
+  cross = os.path.abspath("../../buildroot-2011.11/output/host/usr/bin")
+  
   if os.environ["PATH"].find(cross) == -1:
     os.environ["PATH"] = os.environ["PATH"]+":"+cross
 
 
-
 def P2C(val,fp):
-  return fp.write("%08lx" % val)
+  return fp.write(b"%08lx" % val)
 
 def C2P(fp):
-  return eval("0x"+fp.read(8))
+  return eval(b"0x"+fp.read(8))
 
 def CPIO2Python_all(fp):
   d = {}
-  if fp.read(6) != "070701":
+  if fp.read(6) != b"070701":
     raise ValueError("Unrecognised CPIO format")
   d["ino"] = C2P(fp)
   d["mode"] = C2P(fp)
@@ -82,7 +83,7 @@ def CPIO2Python_all(fp):
 
 
 def Python2CPIO_all(d,fp):
-  fp.write("070701")   # fixed
+  fp.write(b"070701")   # fixed
   P2C(d["ino"],fp)     # unique number (except for hard links)
   P2C(d["mode"],fp)   # 0xa1ff : busybox links
                       # 0x41ed : directories
@@ -110,7 +111,7 @@ class CpioArchive:
     while True:
       d = CPIO2Python_all(fp)
       self.files.append(d)
-      if d["name"].startswith("TRAILER!!!"):
+      if d["name"].startswith(b"TRAILER!!!"):
         break
     # read the rest of the padding (nulls for 512-byte block)
     self.final_padding = fp.read()
@@ -125,12 +126,12 @@ class CpioArchive:
   def AddConsoleDevice(self):
     "Replace anything with /dev/ in the path with correct dev nodes"
     for i in self.files:
-      name = i["name"].replace("\x00","")
-      if name == "dev/console":
+      name = i["name"].replace(b"\x00",b"")
+      if name == b"dev/console":
         # override major/minor versions
         i["rdevmajor"],i["rdevminor"] = 5,1
         i["mode"] = 8576
-        print "Adjusted /dev/console maj/min device number"
+        print("Adjusted /dev/console maj/min device number")
         return
     
     raise IOError("Unable to find dummy console device, it's needed for boot!")
@@ -138,7 +139,7 @@ class CpioArchive:
     
   def WriteAs(self,fname):
     "So long as we don't change the filenames, we don't need to change the padding"
-    fp = file(fname,"wb")
+    fp = open(fname,"wb")
     for d in self.files:
       Python2CPIO_all(d,fp)
     # read the rest of the padding.
@@ -163,7 +164,7 @@ def SymLink(root, pref, rel, files):
   for i in files.split():
     if i:
       if not os.path.exists(i):
-        print "symlink", rel, i
+        print("symlink", rel, i)
         os.symlink(rel, i)
   os.chdir(before)
 
@@ -177,7 +178,7 @@ def GetCPIO(root):
     os.mkdir("dev")
     
   if not os.path.exists("dev/console"):
-    file("dev/console","wb").write("")
+    open("dev/console","wb").write(b"")
   
   # Switch to new subprocess module.
   p = subprocess.Popen("find . | cpio -H newc -o", shell=True, stdout=subprocess.PIPE, close_fds=True)  
@@ -191,7 +192,6 @@ def RemoveTarAndDir(ver):
     os.unlink(tar)
   if os.path.exists(ver):
     shutil.rmtree(ver)
-
   
   
 def Kernel():
@@ -210,7 +210,7 @@ def ExtractBusySymlinks(busybin):
   p = subprocess.Popen(busybin, shell=True, 
           stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
   
-  txt = p.stdout.read()
+  txt = p.stdout.read().decode("utf-8")
   txt = " ".join(txt.split("\n"))
   rex = re.compile(".*(Currently defined functions:)(.*)$")
   m = rex.search(txt)
@@ -228,7 +228,7 @@ def InitBusyBox(root):
   
   busy = GetBusyboxDir()+"/busybox"
   shutil.copyfile(busy, dest)
-  os.chmod(dest, 0755)
+  os.chmod(dest, 0o755)
 
   busy_sbin = " ".join(ExtractBusySymlinks(busy))
   SymLink(root, "sbin", "./busybox", busy_sbin)
@@ -244,7 +244,7 @@ def CopyRootTree(sroot, droot):
       if p.endswith("~"): continue
       src = p
       dest = p.replace(sroot,droot,1)
-      print src, "-->", dest
+      print(src, "-->", dest)
       shutil.copy(src,dest)
 
 
@@ -269,7 +269,7 @@ def BiffInitrd():
   # Create cpio image based on the rootfs we've just created.
   data = GetCPIO(root)
   
-  fp = StringIO(data)
+  fp = BytesIO(data)
   cpio = CpioArchive(fp)
   cpio.AddConsoleDevice()
   cpio.WriteAs("initramfs.cpio")
@@ -289,11 +289,11 @@ def BuildKernel():
 def ConfigKernel():
   AddCrossCompiler()
   os.system('make -C "%s" menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+  
 
 def OldConfig():
   AddCrossCompiler()
   os.system('make -C "%s" oldconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
-
 
 
 def Compile():
@@ -302,11 +302,7 @@ def Compile():
   BuildKernel()
   image = os.path.join(GetKernelDir(), "arch/x86/boot/bzImage")
   shutil.copyfile(image, "bzImage")
-  print "Written 'bzImage'"
-
-
-
-
+  print("Written 'bzImage'")
 
 
 if __name__ == "__main__":
