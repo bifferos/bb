@@ -255,7 +255,7 @@ def CopyRootTree(sroot, droot):
             shutil.copy(src, dest)
 
 
-def make_initrd():
+def make_initrd(profile):
     RemovePath("initramfs.cpio")
     root = "initramfs"
     RemovePath(root)
@@ -267,7 +267,7 @@ def make_initrd():
     InitBusyBox(root)
 
     # Copy /etc and other files needed for startup
-    CopyRootTree("files", root)
+    CopyRootTree(os.path.join("files", profile), root)
 
     SymLink(root, "./", "sbin", "bin")
 
@@ -302,9 +302,9 @@ def old_config():
     check_call('make -C "%s" oldconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir(), shell=True)
 
 
-def compile_all():
+def compile_all(profile):
     build_busybox()
-    make_initrd()
+    make_initrd(profile)
     build_kernel()
     image = os.path.join(GetKernelDir(), "arch/x86/boot/bzImage")
     shutil.copyfile(image, "bzImage")
@@ -315,9 +315,11 @@ def main():
     parser = argparse.ArgumentParser(prog=f'{PROGNAME}', description=f"Create embedded firmware for 1MB Bifferboard")
 
     parser.add_argument("operation", default=False, help="Step to run")
+    parser.add_argument("profile", default=False, help="Files to add to rootfs (see 'files' directory)")
+
     args = parser.parse_args()
     if args.operation == "compile":
-        compile_all()
+        compile_all(args.profile)
     elif args.operation == "config":
         config_kernel()
     elif args.operation == "oldconfig":
