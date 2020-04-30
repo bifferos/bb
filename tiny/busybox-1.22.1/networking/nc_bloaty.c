@@ -898,6 +898,11 @@ int nc_main(int argc UNUSED_PARAM, char **argv)
 		if (o_verbose)
 			themdotted = xmalloc_sockaddr2dotted(&themaddr->u.sa);
 
+		if (o_udpmode)
+		{
+		    printf("broadcast perm\n");
+		    setsockopt_broadcast(netfd);
+		}
 		x = connect_w_timeout(netfd);
 		if (o_zero && x == 0 && o_udpmode)        /* if UDP scanning... */
 			x = udptest();

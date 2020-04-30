@@ -12,6 +12,7 @@ dirs = """sbin dev etc/init.d home proc sys tmp usr/bin usr/sbin
 
 
 import os, sys, glob, stat, shutil, subprocess, re, tarfile
+from subprocess import check_call
 from io import StringIO, BytesIO
 from ftplib import FTP
 from pathlib import Path
@@ -148,7 +149,7 @@ class CpioArchive:
 
 def RemovePath(fname):
   if os.path.exists(fname):
-    os.system("rm -Rf %s" % fname)
+    check_call("rm -Rf %s" % fname, shell=True)
 
 
 def MakeDirs(root, files):
@@ -200,8 +201,8 @@ def Kernel():
   RemoveTarAndDir(ver)
   tar = ver + ".tar.bz2"
   url = "http://www.kernel.org/pub/linux/kernel/v2.6/"+tar
-  os.system("wget "+url)
-  os.system("tar xf " + tar)
+  check_call("wget "+url, shell=True)
+  check_call("tar xf " + tar, shell=True)
   shutil.copyfile("configs/%s-config" % ver, ver + "/.config")
 
 
@@ -278,22 +279,22 @@ def BiffInitrd():
 def BuildBusyBox():
   "Will refresh the compiled-in applets if the config has changed"
   AddCrossCompiler()
-  os.system('make -C "%s"' % GetBusyboxDir())
+  check_call('make -C "%s"' % GetBusyboxDir(), shell=True)
 
 
 def BuildKernel():
   AddCrossCompiler()
-  os.system('make -C "%s" CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+  check_call('make -C "%s" CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir(), shell=True)
 
 
 def ConfigKernel():
   AddCrossCompiler()
-  os.system('make -C "%s" menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+  check_call('make -C "%s" menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir(), shell=True)
   
 
 def OldConfig():
   AddCrossCompiler()
-  os.system('make -C "%s" oldconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir())
+  check_call('make -C "%s" oldconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386' % GetKernelDir(), shell=True)
 
 
 def Compile():

@@ -24,5 +24,12 @@ config BUTTONDSR
         help
           Button runs a program whenever dsr is shorted to ground.
 
+config BUZZER
+        bool "buzzer"
+        default y
+        select ROUTE
+        help
+          Buzzer pulls a serial control line low to activate a buzzer
+
 
 endmenu
