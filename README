@@ -1,7 +1,21 @@
+Introduction
+
+See https://sites.google.com/site/bifferboard/ for more details.
+
+The Bifferboard was a tiny 486-compatible SBC I sold back around 2011.   This is the software for it.
+I still have a supply of Bifferboards which I use for various home-automation tasks.  Although I also have a few
+Raspberry Pis I found them to not be as reliable as the WANSER-R based hardware in the Bifferboard.  I think
+it may just be that the Biffer has on-board NOR flash which I tend not to write to, most of my Biffer systems
+use custom-compiled initrd and just run in RAM doing their thing.  I never did like SD-cards but boards like the
+Beaglebone Black with on-board flash are too pricey.
+
+If you still want to get the hardware please get in touch as I have a fair few of these spare and will let them go at
+cost price.  I doubt I'll find a use for all of them.
+
 
 Instructions for use
 
-This was originally developerd on Slackware circa 13.1, however that Slack version does not boot on VirtualBox 6.0.12.
+This was originally developed on Slackware circa 13.1, however that Slack version does not boot on VirtualBox 6.0.12.
 Use instead Slackware 13.37.  Slackware 14.0 is too late and some compile errors start to emerge at that point 
 (probably fixable but...).  You will need to download kernel linux-2.6.37.6.tar.bz2 and put it in the openwrt/dl directory 
 because the OpenWrt have removed it from their site.  Otherwise the compile seems to work as of 12 Oct 2019.
