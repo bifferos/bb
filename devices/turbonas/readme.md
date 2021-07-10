@@ -1,6 +1,19 @@
 Turbo NAS Card
 
 These cards came in a box with the card, cable and PSU adapter.  PSU connector is a floppy-disk style molex.
+
+Spec:
+ - 133MHz 486sx CPU equivalent
+ - 32MB RAM
+ - 1MB NOR Flash
+
+Operating system boot options:
+Since the device has only 1MB flash this is limited.
+ - 'Tiny' Linux system in the tiny directory of this project fits in 1MB
+ - Biffboot recent versions can pull a kernel off a tftp server if configured to do so.
+ - CoreBoot is reported to be compatible with these devices so could be used to load an OS from IDE/Sata.
+ - Tiny system above can be used to kexec a recent kernel from USB
+
 The back panel has:
  - reset switch (GPIO in)
  - Ethernet RJ45
