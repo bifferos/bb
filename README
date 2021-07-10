@@ -9,21 +9,29 @@ it may just be that the Biffer has on-board NOR flash which I tend not to write 
 use custom-compiled initrd and just run in RAM doing their thing.  I never did like SD-cards but boards like the
 Beaglebone Black with on-board flash are too pricey.
 
-If you still want to get the hardware please get in touch as I have a fair few of these spare and will let them go at
-cost price.  I doubt I'll find a use for all of them.
+If you still want to get the hardware please get in touch as I have a fair few of these spare.
+I doubt I'll find a use for all of them.
 
 
-Instructions for use
+Instructions for use (Compiling)
 
 This was originally developed on Slackware circa 13.1, however that Slack version does not boot on VirtualBox 6.0.12.
-Use instead Slackware 13.37.  Slackware 14.0 is too late and some compile errors start to emerge at that point 
-(probably fixable but...).  You will need to download kernel linux-2.6.37.6.tar.bz2 and put it in the openwrt/dl directory 
-because the OpenWrt have removed it from their site.  Otherwise the compile seems to work as of 12 Oct 2019.
+Use instead Slackware 13.37.  Slackware 14.0 is too late and some openwrt compile errors start to emerge at that point 
+(probably fixable but I don't have the time...).  
+
+Slackware 13.37 is incapable of connecting to github and downloading this software you'll have to scp it across from
+a more recent machine.
+
+BEFORE YOU START:  You will need to download kernel linux-2.6.37.6.tar.bz2 and put it in the openwrt/dl directory 
+because the OpenWrt have removed it from their site.  Otherwise the compile seems to work as of July 2021.
 
 To build Bifferboard firmware and emulator type 'make'.
 
 To run the image under the emulator type 'make run'.
 CTRL-A, X quits the emulator.
+There is some kind of bug in the NOR flash detection which I haven't figured out.  It may be as simple as changing 
+Qemu to return the correct flash code but it does at least run.  That version of Qemu should also be capable of running
+the bzImage correctly, may be quicker than fixing the firmware image loading if that's all that's needed.
 
 Edit the Makefile to suit how you want to organise your virtual
 network.  See Qemu documentation at http://qemu.weilnetz.de/qemu-doc.html
