@@ -36,3 +36,18 @@ the bzImage correctly, may be quicker than fixing the firmware image loading if 
 Edit the Makefile to suit how you want to organise your virtual
 network.  See Qemu documentation at http://qemu.weilnetz.de/qemu-doc.html
 
+Vagrant
+
+Vagrant is a tool from Hashicorp allowing you to manage virtual machines.  Hashicorp also allows one to host public machines
+for free on Vagrant cloud.  To make it easier to work with the Bifferboard software I've created a virtual machine with 
+Slackware 13.37.  To use it:
+
+ - Install VirtualBox
+ - Install vagrant
+ - vagrant up
+ - vagrant ssh
+ - cd /vagrant
+ - cp /usr/src/linux-2.6.36.7.tar.bz2 openwrt/download/.
+ - make
+ 
+
