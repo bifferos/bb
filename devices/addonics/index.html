@@ -1,0 +1,148 @@
+<html>
+<head>
+<link rel="stylesheet" type="text/css" href="style.css" />
+</head>
+<body>
+
+<h2>CPU board pinouts</h2>
+
+<img src="cpu.jpg" alt="CPU board complete"/>
+
+<p>
+Dimmensions: 
+
+<h3>CPU J1 JTAG/Console</h3>
+
+<p>
+J1 is 10-way 0.1 inch (2.54mm) pitch SIL (single-in-line) header.  
+Pin 1 is the square pad (on the right in the picture below).
+</p>
+
+<p>
+<table>
+<tr>
+<td>
+<table border="1">
+<tr><th>Pin</th><th>Function</th></tr>
+<tr><td>1</td><td>+3.3v</td></tr>
+<tr><td>2</td><td>JTAG TMS / GPIO11</td></tr>
+<tr><td>3</td><td>JTAG TDI / GPIO13</td></tr>
+<tr><td>4</td><td>JTAG TDO / GPIO9</td></tr>
+<tr><td>5</td><td>JTAG TCK / GPIO12</td></tr>
+<tr><td>6</td><td>GND</td></tr>
+<tr><td>7</td><td>GND</td></tr>
+<tr><td>8</td><td>Serial console input (3.3v) / GPIO7</td></tr>
+<tr><td>9</td><td>Serial console output (3.3v) / GPIO8</td></tr>
+<tr><td>10</td><td>+3.3v</td></tr>
+</table>
+</td>
+<td>
+<img src="cpu-j1.jpg"/>
+</td>
+</tr>
+</table>
+</p>
+
+<p>
+Enabling GPIO on the serial console disconnects the UART from the output
+pins.
+</p>
+
+
+<h3>Disabling JTAG</h3>
+
+<p>
+R19 is the JTAG enable pull-up.  This is a 10K resistor which 
+pulls the JTAG activation pin high, leaving the JTAG permanently
+enabled.  In the picture the bottom contact connects to +3.3v, the 
+upper contact (yellow arrow) connects to the activation pin.  
+Pulling the activation pin low will disable the 
+JTAG and allow the JTAG pins to be used as GPIO, however a series 
+resistor must be used, since shorting directly to GND will prevent
+the CPU from booting.  Suggested value is 1.2 KOhms.
+</p>
+
+<img src="R19.jpg">
+
+
+
+<h3>CPU J2 IO board interconnect</h3>
+
+<p>
+J2 is a 7-way 0.1 inch pitch SIL, with a male PCB header.  It connects to J1 on the IO board.
+</p>
+
+<p>
+<table>
+<tr>
+<td>
+<table border="1">
+<tr><th>Pin</th><th>Function</th></tr>
+<tr><td>1</td><td>CPU IO Power, 3.3v</td></tr>
+<tr><td>2</td><td>GND</td></tr>
+<tr><td>3</td><td>Red LED (RTCRD/GPIO16)</td></tr>
+<tr><td>4</td><td>IP101a pin9, LED0/PHYAD0</td></tr>
+<tr><td>5</td><td>USB data</td></tr>
+<tr><td>6</td><td>USB data</td></tr>
+<tr><td>7</td><td>CPU Core power, 1.8v</td></tr>
+</table>
+</td>
+</tr>
+</table>
+</p>
+
+<h3>CPU J3 IO board interconnect</h3>
+
+<p>
+J3 is a 7-way 0.1 inch pitch SIL, with a male PCB header.  It connects to J2 on the IO board.
+</p>
+
+
+<table>
+<tr>
+<td>
+<table border="1">
+<tr><th>Pin</th><th>Function</th></tr>
+<tr><td>1</td><td>IP101a pin34, MDI_TP</td></tr>
+<tr><td>2</td><td>+3.3v</td></tr>
+<tr><td>3</td><td>IP101a pin32, REGOUT</td></tr>
+<tr><td>4</td><td>Eth PHY</td></tr>
+<tr><td>5</td><td>Eth PHY</td></tr>
+<tr><td>6</td><td>Reset button (RTCAS/GPIO15)</td></tr>
+<tr><td>7</td><td>IP101a Pin35, AGND</td></tr>
+</table>
+</td>
+</tr>
+</table>
+</p>
+
+<hr>
+
+<h2>IO board pinouts</h2>
+
+<img src="io.jpg" alt="IO board complete"/>
+
+<p>
+Connectors J1 (upper in the picture) and J2 (lower) are 0.1 inch pitch SIL 
+female sockets as described for the CPU board.  
+There are also ethernet, USB and power sockets.  
+The power socket accepts one of the standard 5v wall-wart connectors with 3.5mm outer body and 1.25mm pin.
+The power socket is identical to some of the sockets found on small powered
+USB hubs.
+</p>
+
+<p>
+The board has two through-hole LEDs.  The blue LED indicates power-on, the green
+network activity.  There is also a surface-mount red LED controlled by pin 3 of J1.
+</p>
+
+<p>
+Finally, there is a button connected to pin 6 of J2.  The pin is pulled high via a pull-up
+resistor.  Pressing the button pulls the pin low.
+<p>
+
+<img src="io_board_small.png" alt="IO Board dimensions"/>
+
+
+
+<a href="..">Go back</a>

@@ -1,0 +1,6 @@
+
+body {background-color: black; color: yellow}
+pre {margin-left: 10px}
+A:link {text-decoration: underline; color: magenta;}
+A:visited {text-decoration: underline; color: magenta;}
+#download {font-family: courier; font-size: 300%}
