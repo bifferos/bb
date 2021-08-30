@@ -29,6 +29,9 @@ IO Pins, JTAG:
 
 Removal of R33 results in the JTAG pins (6 pins in a row just below the MAC label) becoming GPIO.  There are four GPIOs, pins 2,3,4,5 (the square PAD indicating pin 1).  These GPIOs are open-collector and will require a weak pull-up.  I don't know if they are 5v tolerant, best to assume not.  Pins 8 and 9 are the serial console.  Any 3.3v CP2102 adapter will communicate with these, pin 6 is ground.  The missing pin 7 is for polarisation and has no function.
 
+![R33](tnasjtag.jpg?raw=true)
+
+
 IDE/Sata:
 
 These devices are connected via USB => sata/IDE converter.
