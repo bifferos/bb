@@ -36,5 +36,9 @@ telnetd -l /bin/sh
 echo "* Starting inetd..."
 inetd
 
+echo "* Setting up GPIO on button pin"
+echo 15 > /sys/class/gpio/export
+
 echo "* Starting doorbell monitor"
-buttondsr /dev/ttyUSB0 /buzz.sh
+/service.sh &
+
