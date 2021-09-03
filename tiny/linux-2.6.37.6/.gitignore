@@ -1,0 +1,120 @@
+#
+# NOTE! Don't add files that are generated in specific
+# subdirectories here. Add them in the ".gitignore" file
+# in that subdirectory instead.
+#
+# NOTE! Please use 'git ls-files -i --exclude-standard'
+# command after changing this file, to see if there are
+# any tracked files which get ignored after the change.
+#
+# Normal rules
+#
+.*
+*.o
+*.o.*
+*.a
+*.s
+*.ko
+*.so
+*.so.dbg
+*.mod.c
+*.i
+*.lst
+*.symtypes
+*.order
+modules.builtin
+*.elf
+*.bin
+*.gz
+*.bz2
+*.lzma
+*.xz
+*.lzo
+*.patch
+*.gcno
+
+#
+# Top-level generic files
+#
+/tags
+/TAGS
+/linux
+/vmlinux
+/vmlinuz
+/System.map
+/Module.markers
+/Module.symvers
+/arch/i386
+
+#
+# git files that we don't want to ignore even it they are dot-files
+#
+!.gitignore
+!.mailmap
+
+#
+# Generated include files
+#
+include/config
+include/linux/version.h
+include/generated
+
+# stgit generated dirs
+patches-*
+
+# quilt's files
+patches
+series
+
+# cscope files
+cscope.*
+ncscope.*
+
+# gnu global files
+GPATH
+GRTAGS
+GSYMS
+GTAGS
+
+*.orig
+*~
+\#*#
+
+
+arch/x86/boot/bzImage
+arch/x86/boot/compressed/mkpiggy
+arch/x86/boot/compressed/piggy.S
+arch/x86/boot/compressed/vmlinux
+arch/x86/boot/compressed/vmlinux.lds
+arch/x86/boot/cpustr.h
+arch/x86/boot/mkcpustr
+arch/x86/boot/tools/build
+arch/x86/boot/voffset.h
+arch/x86/boot/zoffset.h
+arch/x86/kernel/cpu/capflags.c
+arch/x86/kernel/vmlinux.lds
+arch/x86/lib/inat-tables.c
+arch/x86/vdso/vdso32-int80-syms.lds
+arch/x86/vdso/vdso32-syms.lds
+arch/x86/vdso/vdso32-sysenter-syms.lds
+arch/x86/vdso/vdso32/vdso32.lds
+drivers/tty/vt/consolemap_deftbl.c
+drivers/tty/vt/defkeymap.c
+kernel/timeconst.h
+lib/crc32table.h
+lib/gen_crc32table
+scripts/basic/docproc
+scripts/basic/fixdep
+scripts/conmakehash
+scripts/kconfig/conf
+scripts/kconfig/lex.zconf.c
+scripts/kconfig/mconf
+scripts/kconfig/zconf.hash.c
+scripts/kconfig/zconf.tab.c
+scripts/mod/elfconfig.h
+scripts/mod/mk_elfconfig
+scripts/mod/modpost
+usr/gen_init_cpio
+
+
+

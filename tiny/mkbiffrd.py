@@ -332,8 +332,7 @@ def main():
     elif args.operation == "oldconfig":
         old_config()
     else:
-        print("unknown operation")
-        sys.exit(1)
+        sys.exit("unknown operation")
 
 
 if __name__ == "__main__":
