@@ -6,6 +6,7 @@ Script to create initrd for Bifferboard.
 """
 
 
+import sys
 import os
 import glob
 import shutil
@@ -14,6 +15,10 @@ import argparse
 import re
 from subprocess import check_call
 from io import BytesIO
+from pathlib import Path
+
+PROFILE_DIR = Path("profiles")
+PROFILES = [path.name for path in PROFILE_DIR.iterdir() if path.is_dir()]
 
 
 PROGNAME = "mkbiffrd"
@@ -250,7 +255,7 @@ def CopyRootTree(sroot, droot):
             if p.endswith("~"):
                 continue
             src = p
-            dest = p.replace(sroot, droot, 1)
+            dest = p.replace(str(sroot), droot, 1)
             print(src, "-->", dest)
             shutil.copy(src, dest)
 
@@ -267,7 +272,7 @@ def make_initrd(profile):
     InitBusyBox(root)
 
     # Copy /etc and other files needed for startup
-    CopyRootTree(os.path.join("files", profile), root)
+    CopyRootTree(PROFILE_DIR / profile, root)
 
     SymLink(root, "./", "sbin", "bin")
 
@@ -307,15 +312,17 @@ def compile_all(profile):
     make_initrd(profile)
     build_kernel()
     image = os.path.join(GetKernelDir(), "arch/x86/boot/bzImage")
-    shutil.copyfile(image, "bzImage")
-    print("Written 'bzImage'")
+    output = f"bzImage.{profile}"
+    shutil.copyfile(image, output)
+    print(f"Written '{output}'")
 
 
 def main():
     parser = argparse.ArgumentParser(prog=f'{PROGNAME}', description=f"Create embedded firmware for 1MB Bifferboard")
 
-    parser.add_argument("operation", default=False, help="Step to run")
-    parser.add_argument("profile", default=False, help="Files to add to rootfs (see 'files' directory)")
+    parser.add_argument("operation", default=False, choices=["compile", "config", "oldconfig"], help="Step to run")
+    parser.add_argument("profile", default=False, choices=PROFILES,
+       help="Files to add to rootfs (see 'profiles' directory)")
 
     args = parser.parse_args()
     if args.operation == "compile":
