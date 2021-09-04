@@ -76,7 +76,7 @@ def extract_busy_symlinks():
     m = rex.search(txt)
     if m:
         apps = m.group(2).replace(",", " ").replace("\t", " ").split()
-        skip = ["[", "[["]
+        skip = []
         apps = [i for i in apps if i not in skip]
         return apps
 
@@ -108,14 +108,14 @@ class BuildShell(cmd.Cmd):
         self.profile = profile
         self.prompt = f"{profile}> "
         profile_dir = MY_DIR / f"profiles/{profile}"
-        config_kernel = profile_dir / f"config/config_kernel"
-        config_busy = profile_dir / f"config/config_busy"
+        self.config_kernel = profile_dir / f"config/config_kernel"
+        self.config_busy = profile_dir / f"config/config_busy"
         self.rootfs = profile_dir / "rootfs"
-        KERNEL_CONFIG.open("w").write(config_kernel.open().read())
-        BUSYBOX_CONFIG.open("w").write(config_busy.open().read())
+        KERNEL_CONFIG.open("w").write(self.config_kernel.open().read())
+        BUSYBOX_CONFIG.open("w").write(self.config_busy.open().read())
         cross_compiler = MY_DIR / "../../buildroot-2011.11/output/host/usr/bin"
         if not cross_compiler.exists():
-            sys.exit(f"Can't find cross compiler at {cross_compiler}, please get it from the bb releases.")
+            sys.exit(f"Can't find cross compiler at {cross_compiler}, please get it from the project releases.")
         self.env = {}
         self.env.update(os.environ)
         cross_compiler = cross_compiler.resolve()
@@ -124,13 +124,15 @@ class BuildShell(cmd.Cmd):
     def do_kernel(self, line):
         """Configure the kernel"""
         self.execute('make menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
+        self.config_kernel.open("w").write(KERNEL_CONFIG.open().read())
 
     def do_busy(self, line):
         """Configure busybox"""
         self.execute('make menuconfig', BUSYBOX_DIR)
+        self.config_busy.open("w").write(BUSYBOX_CONFIG.open().read())
 
-    def do_compile(self, line):
-        """Compile the firmware for this profile"""
+    def do_make(self, line):
+        """Compile the firmware for this profile: kernel and busybox"""
         self.execute(f'make', BUSYBOX_DIR)
         make_initrd(self.rootfs)
         self.execute('make CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
@@ -142,6 +144,9 @@ class BuildShell(cmd.Cmd):
     def execute(self, command, directory):
         p = Popen(command, shell=True, env=self.env, cwd=directory)
         p.wait()
+
+    def emptyline(self):
+        pass
 
     def do_exit(self, line):
         return True
