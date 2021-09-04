@@ -1,3 +1,4 @@
 bzImage.*
 initramfs.cpio
-initramfs/
+initramfs.spec
+

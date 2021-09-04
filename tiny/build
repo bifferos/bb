@@ -1,0 +1,159 @@
+#!/usr/bin/env python3
+
+"""
+    Script to create tiny firmware for Bifferboard.
+    bifferos@yahoo.co.uk, 2020.
+"""
+
+import sys
+import os
+import shutil
+import subprocess
+import argparse
+import re
+from subprocess import Popen, PIPE
+from pathlib import Path
+import cmd
+from distutils.unixccompiler import UnixCCompiler
+
+PROFILE_DIR = Path("profiles")
+PROFILES = [path.name for path in PROFILE_DIR.iterdir() if path.is_dir()]
+
+# Directory of this script
+MY_DIR = Path(os.path.dirname(sys.argv[0]))
+KERNEL_DIR = MY_DIR / "linux-2.6.37.6"
+KERNEL_CONFIG = KERNEL_DIR / ".config"
+BUSYBOX_DIR = MY_DIR / "busybox-1.22.1"
+BUSYBOX_CONFIG = BUSYBOX_DIR / ".config"
+BUSYBOX_EXE = BUSYBOX_DIR / "busybox"
+
+INITRAMFS_SPEC = MY_DIR / "initramfs.spec"
+INITRAMFS_CPIO = MY_DIR / "initramfs.cpio"
+INITRAMFS_DIR = MY_DIR / "initramfs"
+
+GEN_INIT_CPIO_C = KERNEL_DIR / "usr/gen_init_cpio.c"
+GEN_INIT_CPIO_O = KERNEL_DIR / "usr/gen_init_cpio.o"
+GEN_INIT_CPIO_EXE = KERNEL_DIR / "usr/gen_init_cpio"
+
+
+BASE_INITRD = """dir /sbin 0755 0 0
+slink /bin /sbin 0755 0 0
+dir /dev 0755 0 0
+nod /dev/console 0660 0 0 c 5 1
+dir /etc/init.d 0755 0 0
+dir /home 0755 0 0
+dir /proc 0755 0 0
+dir /sys 0755 0 0
+dir /tmp 0755 0 0
+dir /usr/bin 0755 0 0
+dir /usr/sbin 0755 0 0
+dir /usr/share/udhcpc 0755 0 0
+dir /var/log 0755 0 0
+dir /var/run 0755 0 0
+dir /config 0755 0 0
+file /sbin/busybox ./busybox-1.22.1/busybox 0755 0 0
+"""
+
+
+def run_gen_init_cpio():
+    if not GEN_INIT_CPIO_EXE.exists():
+        print(f"Compiling {GEN_INIT_CPIO_EXE}")
+        compiler = UnixCCompiler()
+        compiler.compile([f"{GEN_INIT_CPIO_C}"], f"{GEN_INIT_CPIO_C.parent}")
+        compiler.link_executable([f"{GEN_INIT_CPIO_O}"], f"{GEN_INIT_CPIO_EXE}", f"{GEN_INIT_CPIO_EXE.parent}")
+    p = Popen(f"{GEN_INIT_CPIO_EXE} {INITRAMFS_SPEC}", stdout=PIPE, shell=True)
+    data = p.communicate(b"")[0]
+    return data
+
+
+def extract_busy_symlinks():
+    """We do this by running the binary and parsing the output, but it relies on us being an intel system"""
+    p = subprocess.Popen(str(BUSYBOX_EXE), shell=True,
+                         stdin=subprocess.PIPE, stdout=subprocess.PIPE, close_fds=True)
+    out = p.communicate(b"")[0].decode()
+    txt = " ".join(out.split("\n"))
+    rex = re.compile(".*(Currently defined functions:)(.*)$")
+    m = rex.search(txt)
+    if m:
+        apps = m.group(2).replace(",", " ").replace("\t", " ").split()
+        skip = ["[", "[["]
+        apps = [i for i in apps if i not in skip]
+        return apps
+
+    sys.exit("Unable to get applets from busybox binary")
+
+
+def make_initrd(rootfs):
+    spec = BASE_INITRD
+    applets = extract_busy_symlinks()
+    for applet in applets:
+        spec += f"slink /sbin/{applet} /sbin/busybox 0755 0 0\n"
+    for path in rootfs.rglob("*"):
+        if path.is_dir():
+            continue
+        relative = f"{path}".replace(f"{rootfs}", "", 1)
+        text = f"file {relative} ./{path} 0755 0 0\n"
+        spec += text
+    INITRAMFS_SPEC.open("w").write(spec)
+    data = run_gen_init_cpio()
+    INITRAMFS_CPIO.open("wb").write(data)
+
+
+class BuildShell(cmd.Cmd):
+    intro = 'Type help or ? to list commands.'
+    file = None
+
+    def __init__(self, profile):
+        super().__init__()
+        self.profile = profile
+        self.prompt = f"{profile}> "
+        profile_dir = MY_DIR / f"profiles/{profile}"
+        config_kernel = profile_dir / f"config/config_kernel"
+        config_busy = profile_dir / f"config/config_busy"
+        self.rootfs = profile_dir / "rootfs"
+        KERNEL_CONFIG.open("w").write(config_kernel.open().read())
+        BUSYBOX_CONFIG.open("w").write(config_busy.open().read())
+        cross_compiler = MY_DIR / "../../buildroot-2011.11/output/host/usr/bin"
+        if not cross_compiler.exists():
+            sys.exit(f"Can't find cross compiler at {cross_compiler}, please get it from the bb releases.")
+        self.env = {}
+        self.env.update(os.environ)
+        cross_compiler = cross_compiler.resolve()
+        self.env["PATH"] = f"{cross_compiler}:" + self.env["PATH"]
+
+    def do_kernel(self, line):
+        """Configure the kernel"""
+        self.execute('make menuconfig CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
+
+    def do_busy(self, line):
+        """Configure busybox"""
+        self.execute('make menuconfig', BUSYBOX_DIR)
+
+    def do_compile(self, line):
+        """Compile the firmware for this profile"""
+        self.execute(f'make', BUSYBOX_DIR)
+        make_initrd(self.rootfs)
+        self.execute('make CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
+        image = KERNEL_DIR / "arch/x86/boot/bzImage"
+        output = f"bzImage.{self.profile}"
+        shutil.copyfile(image, output)
+        print(f"Written '{output}'")
+
+    def execute(self, command, directory):
+        p = Popen(command, shell=True, env=self.env, cwd=directory)
+        p.wait()
+
+    def do_exit(self, line):
+        return True
+
+
+def main():
+    parser = argparse.ArgumentParser(prog='build', description=f"Create embedded firmware for 1MB Bifferboard")
+    parser.add_argument("profile", default=False, choices=PROFILES,
+                        help="Files to add to rootfs (see 'profiles' directory)")
+    args = parser.parse_args()
+    BuildShell(args.profile).cmdloop()
+
+
+if __name__ == "__main__":
+    main()
