@@ -228,23 +228,37 @@ Alternatively I could use e.g.
 [MIC2545A](https://www.microchip.com/en-us/product/MIC2545A) (a personal favourite of 
 mine) to drive the LED at (almost) the full supply voltage, but it does seem overkill.
 
+Next I tested the 4-LED array.
+
+![](img/test_7.jpg)
+
+Here something interesting happened.  I was expecting to drive this array with 20v because a
+single LED was driven at 5v.  But I only needed 12.6v.  It seemed either I had damaged the LED
+when I extracted it, or I hadn't made a good solder join.  Really that LED should have operated
+at ~35mA with about 3.2v across it.
+
+![](img/test_8.jpg)
+
+Next up I tried the Philips LED.  This produced a lot more brightness by the time I got it up
+to ~37mA.  
+
 ![](img/test_3.jpg)
 
-Next up I tried the Philips LED.  This produced a lot more brightness for not much more voltage
-and about the same current.
+This seemed to confirm my suspicion about the damage to the first LED.  for not much more voltage
+and about the same current I was getting significantly more brightness.
 
 ![](img/test_6.jpg)
 
-In fact, I quickly covered it with the diffuser to save my eyes.  The LED produced a lot of brightness,
-but please bear in mind I was using no heat-sink, didn't run it for long, and I'm unsure if 
+In fact, I quickly covered it with the diffuser to save my eyes.  Please bear in mind I was using 
+no heat-sink, didn't run it for long, and I'm unsure if 
 the couple of blobs of solder on the strip-board would be enough to cool it adequately.  This
 is something I may look into in the future.
 It's a bit disappointing that the sweet-spot for this LED isn't 5v, however an Atmega 328p
 should theoretically be OK up to 5.5v.  You could always get a slightly higher voltage to drive
 the LED with a 
 [switching regulator](https://hackaday.com/2021/01/09/avr-microcontroller-doubles-up-as-a-switching-regulator/),
-and I think the precise output voltage wouldn't be critical so long as you're averaging out at 
-something within spec for the LED.
+and I think the precise output voltage (ripple) wouldn't be critical as long as you're averaging
+out at something within spec for the LED.
 
 ![](img/test_4.jpg)
 
