@@ -17,9 +17,9 @@ be this single LED that failed open-circuit thereby taking the whole thing out.
 ![](img/3w_1.jpg)
 
 It was easy to separate the two parts and get the LED section out, just pulling
-with moderate pressure did the trick.  It was joined to the electronics with two 
+with moderate pressure did the trick.  It was joined to the base with two 
 wires which I cut.  A simple bridge rectifier and smoothing capacitor,
-no constant-current generator that I could make out.
+no constant-current circuit that I could make out.
 
 ![](img/3w_2.jpg)
 
@@ -54,8 +54,8 @@ instead of having some meaty resistors inside the unit which would heat up.
 ![](img/3w_7.jpg)
 
 So that's my haul for the parts bin.  But since I wasn't sure if I wanted to use 
-10v for my project (I'd need two PSU voltages, 5v for any MCU and 10V for the lamps)
-I checked to see if I could desolder LEDs and use them individually at lower 
+10v for my projects (I'd need two PSU voltages, 5v for any MCU and 10V for the lamps)
+I checked to see if I could de-solder LEDs and use them individually at lower 
 voltages.
 
 ![](img/3w_8.jpg)
@@ -109,12 +109,12 @@ Philips 11w Bayonet
 
 A lot more posh, more powerful and expensive, the Philips bulbs in my home have
 tended to last a lot longer than any of the cheap stuff, but this unit failed somewhat
-earlier than the stated life would have suggested all the same.
+earlier than the stated life suggested all the same.
 
 ![](img/11w_1.jpg)
 
 But re-using any of this tech is a lot more of a challenge than it was for
-the cheap bulb above.  The first problem was how to get into it.  The diffuser didn't
+the cheap E14 bulb.  The first problem was how to get into it.  The diffuser didn't
 unscrew despite my best efforts.  I started hack-sawing off the bayonet.  That didn't
 help in the slightest.  So when I had almost given up I had a hunch.  I got out a brick
 bolster (that's used for cutting bricks in half), and a lump hammer.  I gave one
@@ -155,8 +155,9 @@ generator circuit
 
 ![](img/11w_6.jpg)
 
-...with some kind of supervisor chip along with the bridge.  I may look into how this 
-works later.
+...with some kind of supervisor chip along with the bridge.  So with a constant current
+generator perhaps the voltage across individual LEDs wouldn't need to be so high 
+after all.
 
 ![](img/11w_7.jpg)
 
@@ -224,7 +225,7 @@ Around 38mA was reached at 5v.  This is OK, but I'd probably need to power such 
 slightly over 5v, if I was driving the LED from an open-collector my PSU would realistically
 need to be about 6v.  This is a bit of a nuisance for projects with e.g. a Pi, or 5v Arduino.
 Alternatively I could use e.g.
-[MIC2545A](https://github.com/user/repo/blob/branch/other_file.md) (a personal favourite of 
+[MIC2545A](https://www.microchip.com/en-us/product/MIC2545A) (a personal favourite of 
 mine) to drive the LED at (almost) the full supply voltage, but it does seem overkill.
 
 ![](img/test_3.jpg)
@@ -234,7 +235,16 @@ and about the same current.
 
 ![](img/test_6.jpg)
 
-In fact, I quickly covered it with the diffuser to save my eyes.
+In fact, I quickly covered it with the diffuser to save my eyes.  The LED produced a lot of brightness,
+but please bear in mind I was using no heat-sink, didn't run it for long, and I'm unsure if 
+the couple of blobs of solder on the strip-board would be enough to cool it adequately.  This
+is something I may look into in the future.
+It's a bit disappointing that the sweet-spot for this LED isn't 5v, however an Atmega 328p
+should theoretically be OK up to 5.5v.  You could always get a slightly higher voltage to drive
+the LED with a 
+[switching regulator](https://hackaday.com/2021/01/09/avr-microcontroller-doubles-up-as-a-switching-regulator/),
+and I think the precise output voltage wouldn't be critical so long as you're averaging out at 
+something within spec for the LED.
 
 ![](img/test_4.jpg)
 
@@ -244,9 +254,11 @@ Summary
 
 I hope this readme is useful and helps you recycle old bulbs for your 
 projects.  It seems depending on the bulb, you may have more or less effort to take it apart.
+The internal current-limiting resistors in these parts do make them slightly more 
+challenging - but not impossible - for home project use at low voltage.
 Also, if you are 100% committed to saving the environment or something, then bear in mind that
-all the compact bulbs are a dead loss in terms of ECO credentials.  It's far more ecological
-to go for a bulkhead light that directs all the light down, and has a proper constant current 
+all the compact bulbs are a dead loss in terms of ECO credentials.  It's far better to
+go for a bulkhead light that directs all the light down, and has a proper constant current 
 circuit which you can easily open up and repair.  These lights consume tiny amounts of power
 in comparison to the bulb format because all the light is sent in one direction and the 
 diffuser spreads it around the room.  They are, of course, not very nice to look at, and I'd 
