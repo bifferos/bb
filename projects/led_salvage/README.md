@@ -24,18 +24,18 @@ no constant-current circuit that I could make out.
 ![](img/3w_2.jpg)
 
 I used my wire-strippers as a clamp (I really 
-shouldn't, but they're always to hand)
+shouldn't, but they're always to hand).
 
 ![](img/3w_3.jpg)
 
 The LED section consists of 6 PCBs joined in a cylinder and connected to two 
 circular PCBs at each end.  The upper PCB sports 6 more LEDs, the lower one 
-has the electronics
+has the electronics.
 
 ![](img/3w_4.jpg)
 
 I really liked that I didn't need to resort to hot air and yanking to 
-de-solder these PCBs they came apart cleanly with nothing more than braid
+de-solder these PCBs they came apart cleanly with nothing more than braid.
 
 ![](img/3w_5.jpg)
 
@@ -92,7 +92,7 @@ but I always found that stuff expensive, so I've tried to manage without.
 ![](img/3w_12.jpg)
 
 So with the board cut smaller and some headers attached I could now bread-board 
-the LED
+the LED.
 
 ![](img/3w_13.jpg)
 
@@ -108,12 +108,12 @@ Philips 11w Bayonet
 ===================
 
 A lot more posh, more powerful and expensive, the Philips bulbs in my home have
-tended to last a lot longer than any of the cheap stuff, but this unit failed somewhat
+tended to last longer than any of the cheap stuff, but this unit failed somewhat
 earlier than the stated life suggested all the same.
 
 ![](img/11w_1.jpg)
 
-But re-using any of this tech is a lot more of a challenge than it was for
+Re-using any of this tech is a lot more of a challenge than it was for
 the cheap E14 bulb.  The first problem was how to get into it.  The diffuser didn't
 unscrew despite my best efforts.  I started hack-sawing off the bayonet.  That didn't
 help in the slightest.  So when I had almost given up I had a hunch.  I got out a brick
@@ -133,8 +133,8 @@ open the lower part.
 ![](img/11w_3.jpg)
 
 Again, this was really difficult.  I could see that I might be able to pull out the 
-metal heatsink below the LED PCB but it wouldn't budge.  I widened one of the holes
-to get some flat bladed tools through to try to rotate it but it wasn't moving
+metal heat-sink below the LED PCB, but it wouldn't budge.  I widened one of the holes
+to get some flat bladed tools through to try to rotate it, but it wasn't moving
 So I decided to just forget about the electronics inside and get the LEDs.
 
 Removing the 'PCB' was fairly easy.  There was some sticky, presumably heat-conductive
@@ -151,7 +151,7 @@ probably conducted away by the steel backing plate.
 
 Just while I'm here, I sawed open the rest of the bulb to pull out the electronics
 (it was the only way) and discovered what looked to be a 'proper' constant current
-generator circuit
+generator circuit...
 
 ![](img/11w_6.jpg)
 
@@ -161,12 +161,12 @@ after all.
 
 ![](img/11w_7.jpg)
 
-But next off I removed all the gunk from the LED board, in preparation for using hot
+Next I removed all the gunk from the LED board, in preparation for using hot
 air.
 
 ![](img/11w_8.jpg)
 
-At first I tried just heating the board from the back, and lifting components off.
+At first, I tried just heating the board from the back, and lifting components off.
 This wasn't very satisfactory, and I damaged some LEDs like this.
 
 ![](img/11w_9.jpg)
@@ -176,13 +176,13 @@ blow the components off the board, that way they wouldn't hang around any longer
 they needed to, as soon as the solder was melted they'd be blown out of the heat path.
 
 I cleared a wide area of space, so I could spot the components later, blasted the heat
-at the board, and didn't worry too much about where they were going.
+at the board, and sent them all over the place.
 
 ![](img/11w_10.jpg)
 
 I collected them all up.  The melted ones were damaged in the earlier attempt. 
 My approach with blasting them off the board was highly effective and
-resulted in minimal damage.  You just need a decent space to work in.
+resulted in minimal damage. 
 
 ![](img/11w_11.jpg)
 
@@ -197,7 +197,7 @@ was about double the size of the other.
 
 ![](img/11w_14.jpg)
 
-And it also worked!
+But it also survived the attempt!
 
 ![](img/11w_13.jpg)
 
@@ -271,7 +271,7 @@ projects.  It seems depending on the bulb, you may have more or less effort to t
 The internal current-limiting resistors in these parts do make them slightly more 
 challenging - but not impossible - for home project use at low voltage.
 Also, if you are 100% committed to saving the environment or something, then bear in mind that
-all the compact bulbs are a dead loss in terms of ECO credentials.  It's far better to
+all the compact bulbs are a dead loss in terms of eco credentials.  It's far better to
 go for a bulkhead light that directs all the light down, and has a proper constant current 
 circuit which you can easily open up and repair.  These lights consume tiny amounts of power
 in comparison to the bulb format because all the light is sent in one direction and the 
