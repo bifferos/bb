@@ -15,6 +15,8 @@ from subprocess import Popen, PIPE
 from pathlib import Path
 import cmd
 from distutils.unixccompiler import UnixCCompiler
+from ftplib import FTP
+from telnetlib import Telnet
 
 PROFILE_DIR = Path("profiles")
 PROFILES = [path.name for path in PROFILE_DIR.iterdir() if path.is_dir()]
@@ -100,7 +102,7 @@ def make_initrd(rootfs):
 
 
 class BuildShell(cmd.Cmd):
-    intro = 'Type help or ? to list commands.'
+    intro = 'Firmware shell.  Type help or ? to list commands.'
     file = None
 
     def __init__(self, profile):
@@ -111,6 +113,7 @@ class BuildShell(cmd.Cmd):
         self.config_kernel = profile_dir / f"config/config_kernel"
         self.config_busy = profile_dir / f"config/config_busy"
         self.rootfs = profile_dir / "rootfs"
+        self.output = MY_DIR / f"bzImage.{self.profile}"
         KERNEL_CONFIG.open("w").write(self.config_kernel.open().read())
         BUSYBOX_CONFIG.open("w").write(self.config_busy.open().read())
         cross_compiler = MY_DIR / "../../buildroot-2011.11/output/host/usr/bin"
@@ -137,9 +140,19 @@ class BuildShell(cmd.Cmd):
         make_initrd(self.rootfs)
         self.execute('make CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
         image = KERNEL_DIR / "arch/x86/boot/bzImage"
-        output = f"bzImage.{self.profile}"
-        shutil.copyfile(image, output)
+        shutil.copyfile(image, self.output)
         print(f"Written '{output}'")
+
+    def do_flash(self, line):
+        """Flash to target, assuming target is running NOR flash kernel module"""
+        ftp = FTP(line.strip())
+        ftp.login()
+        ftp.storbinary('STOR bzImage', self.output.open("rb"))
+        ftp.quit()
+        with Telnet(line.strip(), 23) as tn:
+            tn.read_until(b"/ # ")
+            tn.write(b"cat /bzImage > /dev/biffkernel\n")
+            tn.read_until(b"/ # ")
 
     def execute(self, command, directory):
         p = Popen(command, shell=True, env=self.env, cwd=directory)
