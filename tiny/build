@@ -42,14 +42,12 @@ BASE_INITRD = """dir /sbin 0755 0 0
 slink /bin /sbin 0755 0 0
 dir /dev 0755 0 0
 nod /dev/console 0660 0 0 c 5 1
-dir /etc/init.d 0755 0 0
 dir /home 0755 0 0
 dir /proc 0755 0 0
 dir /sys 0755 0 0
 dir /tmp 0755 0 0
 dir /usr/bin 0755 0 0
 dir /usr/sbin 0755 0 0
-dir /usr/share/udhcpc 0755 0 0
 dir /var/log 0755 0 0
 dir /var/run 0755 0 0
 dir /config 0755 0 0
@@ -87,14 +85,19 @@ def extract_busy_symlinks():
 
 def make_initrd(rootfs):
     spec = BASE_INITRD
+    existing_dirs = [_.split(" ")[1] for _ in spec.split("\n") if _.startswith("dir")]
+
     applets = extract_busy_symlinks()
     for applet in applets:
         spec += f"slink /sbin/{applet} /sbin/busybox 0755 0 0\n"
     for path in rootfs.rglob("*"):
-        if path.is_dir():
-            continue
         relative = f"{path}".replace(f"{rootfs}", "", 1)
-        text = f"file {relative} ./{path} 0755 0 0\n"
+        if path.is_dir():
+            if relative in existing_dirs:
+                continue
+            text = f"dir {relative} 0755 0 0\n"
+        else:
+            text = f"file {relative} ./{path} 0755 0 0\n"
         spec += text
     INITRAMFS_SPEC.open("w").write(spec)
     data = run_gen_init_cpio()
@@ -141,7 +144,7 @@ class BuildShell(cmd.Cmd):
         self.execute('make CROSS_COMPILE=i486-unknown-linux-uclibc- ARCH=i386', KERNEL_DIR)
         image = KERNEL_DIR / "arch/x86/boot/bzImage"
         shutil.copyfile(image, self.output)
-        print(f"Written '{output}'")
+        print(f"Written '{self.output}'")
 
     def do_flash(self, line):
         """Flash to target, assuming target is running NOR flash kernel module"""
