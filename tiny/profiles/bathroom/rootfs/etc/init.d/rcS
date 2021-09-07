@@ -36,6 +36,9 @@ telnetd -l /bin/sh
 echo "* Starting inetd..."
 inetd
 
+echo "* Starting httpd..."
+httpd
+
 echo "* Setting up GPIO"
 echo 16 > /sys/class/gpio/export
 echo out > /sys/class/gpio/gpio16/direction
