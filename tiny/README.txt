@@ -46,7 +46,7 @@ also work on Slackware 14.2.
 - One exception is cc1 which depends on mpfr, so make a link from 
   mpfr.so.4 -> mpfr.so.6 in /usr/lib64.  mpfr v6 seems to be backward
   compatible.
-- Put the built toolchain in ../../buildroot-2011/11/output/host
+- Put the built toolchain in /opt/buildroot-2011/11/output/host
   You should be able to now use this to compile busybox 1.22.1 provided here.
 - For the kernel you may get an error from Perl at line 373 in the kernel file kernel/timeconst.pl
   If you do, simply do what it says, take out the defined, e.g. 
