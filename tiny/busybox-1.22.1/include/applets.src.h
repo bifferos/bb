@@ -110,6 +110,7 @@ IF_CP(APPLET_NOEXEC(cp, cp, BB_DIR_BIN, BB_SUID_DROP, cp))
 IF_CROND(APPLET(crond, BB_DIR_USR_SBIN, BB_SUID_DROP))
 /* Needs to be run by root or be suid root - needs to change /var/spool/cron* files: */
 IF_CRONTAB(APPLET(crontab, BB_DIR_USR_BIN, BB_SUID_REQUIRE))
+IF_BIFFJTAG(APPLET(biffjtag, BB_DIR_USR_BIN, BB_SUID_REQUIRE))
 IF_CRYPTPW(APPLET(cryptpw, BB_DIR_USR_BIN, BB_SUID_DROP))
 IF_CUT(APPLET_NOEXEC(cut, cut, BB_DIR_USR_BIN, BB_SUID_DROP, cut))
 IF_DC(APPLET(dc, BB_DIR_USR_BIN, BB_SUID_DROP))

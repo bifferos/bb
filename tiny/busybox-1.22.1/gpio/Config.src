@@ -16,20 +16,23 @@ config BUTTON
 	  Enable button support
 	  Button sends a network packet whenever pressed (requires GPIO).
 
-
 config BUTTONDSR
         bool "buttondsr"
         default y
-        select ROUTE
         help
           Button runs a program whenever dsr is shorted to ground.
 
 config BUZZER
         bool "buzzer"
         default y
-        select ROUTE
         help
           Buzzer pulls a serial control line low to activate a buzzer
+
+config BIFFJTAG
+        bool "biffjtag"
+        default y
+        help
+          Allows programming one Bifferboard from another via the jtag pins
 
 
 endmenu

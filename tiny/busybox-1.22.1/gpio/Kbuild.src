@@ -9,5 +9,6 @@ lib-y:=
 INSERT
 lib-$(CONFIG_BUTTON)          += button.o
 lib-$(CONFIG_BUTTONDSR)       += buttondsr.o
-lib-$(CONFIG_BUZZER)       += buzzer.o
+lib-$(CONFIG_BUZZER)          += buzzer.o
+lib-$(CONFIG_BIFFJTAG)        += biffjtag.o rdc.o jtag.o
 
