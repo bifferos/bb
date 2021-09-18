@@ -818,3 +818,5 @@ source selinux/Config.in
 source shell/Config.in
 source sysklogd/Config.in
 source gpio/Config.in
+source serial/Config.in
+
