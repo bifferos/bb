@@ -1,7 +1,7 @@
 #
 # Automatically generated make config: don't edit
 # Busybox version: 1.22.1
-# Sun Sep 19 12:44:18 2021
+# Sun Sep 19 14:13:33 2021
 #
 CONFIG_HAVE_DOT_CONFIG=y
 
@@ -758,7 +758,7 @@ CONFIG_ARPING=y
 # CONFIG_FEATURE_BRCTL_FANCY is not set
 # CONFIG_FEATURE_BRCTL_SHOW is not set
 # CONFIG_DNSD is not set
-# CONFIG_ETHER_WAKE is not set
+CONFIG_ETHER_WAKE=y
 # CONFIG_FAKEIDENTD is not set
 CONFIG_FTPD=y
 CONFIG_FEATURE_FTP_WRITE=y
