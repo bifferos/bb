@@ -1,0 +1,4 @@
+#!/bin/sh
+
+echo "Setting GPIO16 low to switch on"
+echo 0 > /sys/class/gpio/gpio16/value
