@@ -51,3 +51,13 @@ Slackware 13.37.  To use it:
  - make
  
 
+If you want to purchase Bifferboards you can do so via the paypal link below.  There are some conditions that you need to accept:
+1) This is a private sale and not subject to distance regulations.
+2) Returns are not accepted.
+3) Boards have all been tested by me, but I cannot offer any warranty on them.  That said I will try to replace any defective boards if I can but the postage expense will be yours.
+4) I will only be selling these in batches of 5 at a cost of £30 uk pounds + postage, e.g. £6 each.
+
+If you wish to purchase more than 5 boards, or you want turbo NAS cards, or cases or PSUs (I only have the UK ones), or serial programming cables drop me an email at bifferos@gmail.com and I will try to sort something out.
+
+[![paypal](https://www.paypalobjects.com/en_US/GB/i/btn/btn_buynowCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5UT56VZB37SNL)
+
