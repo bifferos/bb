@@ -1,0 +1,19 @@
+#
+# For a description of the syntax of this configuration file,
+# see scripts/kbuild/config-language.txt.
+#
+
+
+menu "i2c Tools"
+
+INSERT
+
+config I2CDETECT
+	bool "i2cdetect"
+	default y
+	help
+	  The i2cdetect command from i2c-tools
+
+
+endmenu
+

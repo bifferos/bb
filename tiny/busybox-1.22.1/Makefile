@@ -493,6 +493,7 @@ libs-y		:= \
 		util-linux/volume_id/ \
 		gpio/ \
 		serial/ \
+		i2c-utils/ \
 
 endif # KBUILD_EXTMOD
 
