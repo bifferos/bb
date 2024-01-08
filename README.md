@@ -2,17 +2,6 @@ Introduction
 
 See https://sites.google.com/site/bifferboard/ for more details.
 
-The Bifferboard was a tiny 486-compatible SBC I sold back around 2011.   This is the software for it.
-I still have a supply of Bifferboards which I use for various home-automation tasks.  Although I also have a few
-Raspberry Pis I found them to not be as reliable as the WANSER-R based hardware in the Bifferboard.  I think
-it may just be that the Biffer has on-board NOR flash which I tend not to write to, most of my Biffer systems
-use custom-compiled initrd and just run in RAM doing their thing.  I never did like SD-cards but boards like the
-Beaglebone Black with on-board flash are too pricey.
-
-If you still want to get the hardware please get in touch as I have a fair few of these spare.
-I doubt I'll find a use for all of them.
-
-
 Instructions for use (Compiling)
 
 This was originally developed on Slackware circa 13.1, however that Slack version does not boot on VirtualBox 6.0.12.
@@ -50,14 +39,4 @@ Slackware 13.37.  To use it:
  - cp /usr/src/linux-2.6.36.7.tar.bz2 openwrt/download/.
  - make
  
-
-If you want to purchase Bifferboards you can do so via the paypal link below.  There are some conditions that you need to accept:
-1) This is a private sale and not subject to distance regulations.
-2) Returns are not accepted.
-3) Boards have all been tested by me, but I cannot offer any warranty on them.  That said I will try to replace any defective boards if I can but the postage expense will be yours.
-4) I will only be selling these in batches of 5 at a cost of £30 uk pounds + postage, e.g. £6 each.
-
-If you wish to purchase more than 5 boards, or you want turbo NAS cards, or cases or PSUs (I only have the UK ones), or serial programming cables drop me an email at bifferos@gmail.com and I will try to sort something out.
-
-[![paypal](https://www.paypalobjects.com/en_US/GB/i/btn/btn_buynowCC_LG.gif)](https://www.paypal.com/cgi-bin/webscr?cmd=_s-xclick&hosted_button_id=5UT56VZB37SNL)
 
